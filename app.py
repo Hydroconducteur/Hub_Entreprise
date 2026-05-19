@@ -6,6 +6,10 @@ from zoneinfo import ZoneInfo
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
+# 🔗 CONFIGURATION DE TON LIEN (Remplace par ton vrai lien si la détection automatique ne te convient pas)
+# Exemple : "https://hydroconducteur-mon-app.streamlit.app"
+VOTRE_LIEN_ACTUEL = "https://hub-entreprise.streamlit.app"
+
 # --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
 conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
 cursor = conn.cursor()
@@ -38,7 +42,7 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
     prenom TEXT PRIMARY KEY
 )""")
 
-# --- NOUVEAU : Création des tables d'ARCHIVES (Accessibles uniquement par l'Admin) ---
+# Création des tables d'ARCHIVES
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS planning_archive (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +68,7 @@ CREATE TABLE IF NOT EXISTS tchat_archive (
 )""")
 conn.commit()
 
-# --- MIGRATION DE SÉCURITÉ (Ajoute la colonne priorité si la BDD existait déjà) ---
+# --- MIGRATION DE SÉCURITÉ ---
 try:
     cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     conn.commit()
@@ -81,7 +85,7 @@ def nettoyer_et_archiver_data():
     il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
     date_actuelle = now_paris.strftime("%Y-%m-%d %H:%M:%S")
     
-    # 1. Transfert des anciens messages du tchat vers les archives avant suppression active
+    # 1. Transfert des anciens messages du tchat vers les archives
     cursor.execute("""
         INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage)
         SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?
@@ -89,7 +93,7 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # 2. Transfert des tâches terminées de plus de 14 jours vers les archives avant suppression active
+    # 2. Transfert des tâches terminées de plus de 14 jours
     cursor.execute("""
         INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
         SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
@@ -97,7 +101,7 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # 3. Nettoyage définitif des archives de PLUS de 6 mois (180 jours)
+    # 3. Nettoyage définitif des archives de PLUS de 6 mois
     cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     
@@ -169,7 +173,6 @@ with st.sidebar:
     st.write("---")
     st.title("🗺️ Navigation")
     
-    # --- AJOUT DYNAMIQUE DE LA PAGE ARCHIVE UNIQUEMENT POUR L'ADMINISTRATEUR ---
     liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat"]
     if st.session_state.role == "Administrateur":
         liste_pages.append("🗄️ Archives (6 mois)")
@@ -200,7 +203,15 @@ with st.sidebar:
                 
         with st.expander("🔗 Liens d'accès direct", expanded=False):
             st.caption("Copie ces liens pour ton équipe (connexion automatique) :")
-            base_url = "https://hub-entreprise.streamlit.app" 
+            
+            # Essaye de récupérer dynamiquement l'URL actuelle sur Streamlit Cloud, sinon prend la variable par défaut
+            base_url = VOTRE_LIEN_ACTUEL
+            if hasattr(st, "get_option") and "browser.gatherUsageStats" in st.get_option: 
+                # Si l'URL par défaut contient encore "hub-entreprise", on met un avertissement instructif
+                if "hub-entreprise.streamlit.app" in base_url:
+                    st.warning("💡 Pense à remplacer l'adresse d'exemple par ton vrai lien dans le code (ligne 9) pour que les boutons Copier fonctionnent parfaitement.")
+
+            st.write("Lien pour **Christophe (Admin)** :")
             st.code(f"{base_url}/?qui=Christophe", language="text")
             
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
@@ -445,7 +456,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 c_t.markdown(f"<div style='text-align: center;'>{temps}</div>", unsafe_allow_html=True)
                 c_s.markdown(f"<div style='text-align: center;'>🟢 {statut}</div>", unsafe_allow_html=True)
                 
-                # Formatage lisible de la date d'archivage
                 try:
                     dt_arch = datetime.strptime(date_arch, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y")
                 except:
