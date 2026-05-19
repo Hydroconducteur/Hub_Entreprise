@@ -173,23 +173,35 @@ if page == "📋 Planning de l'équipe":
             col_i.markdown(f"<div style='text-align: center;'>{quoi}</div>", unsafe_allow_html=True)
             col_t.markdown(f"<div style='text-align: center;'>{temps}</div>", unsafe_allow_html=True)
             
-            # Affichage du Statut centré (tient désormais parfaitement sur une seule ligne)
+            # Affichage du Statut centré
             if statut == "En cours ⏳":
                 col_s.markdown("<div style='text-align: center;'>🟡 <b>En cours</b></div>", unsafe_allow_html=True)
             else:
                 col_s.markdown(f"<div style='text-align: center;'>🟢 {statut}</div>", unsafe_allow_html=True)
                 
-            # Gestion de la cellule d'Action
-            if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
-                if col_act.button("Fait ✅", key=f"btn_{id_t}", use_container_width=True):
-                    maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
-                    cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
-                    conn.commit()
-                    st.toast(f"Tâche {num} validée !")
-                    st.rerun()
+            # --- GESTION DYNAMIQUE DE LA CELLULE D'ACTION (AVEC DROIT À L'ERREUR) ---
+            if statut == "En cours ⏳":
+                # Si la tâche est en cours, afficher le bouton "Fait ✅" si l'utilisateur a les droits
+                if st.session_state.user == qui or st.session_state.role == "Administrateur":
+                    if col_act.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
+                        maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
+                        cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
+                        conn.commit()
+                        st.toast(f"Tâche {num} validée !")
+                        st.rerun()
+                else:
+                    col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
             else:
-                # Un tiret propre au milieu plutôt qu'un espace vide asymétrique
-                col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
+                # Si la tâche est finie, on permet de faire machine arrière avec "Annuler ↩️"
+                if st.session_state.user == qui or st.session_state.role == "Administrateur":
+                    if col_act.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
+                        cursor.execute("UPDATE planning SET date_realisation = 'En cours ⏳' WHERE id = ?", (id_t,))
+                        conn.commit()
+                        st.toast(f"Tâche {num} remise en cours !")
+                        st.rerun()
+                else:
+                    col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
+                    
             st.write("---")
     else:
         st.info("Aucune tâche prévue pour le moment.")
