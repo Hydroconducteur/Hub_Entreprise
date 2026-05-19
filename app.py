@@ -140,7 +140,7 @@ if page == "📋 Planning de l'équipe":
                         st.success("Tâche ajoutée avec succès !")
                         st.rerun()
                     else:
-                        st.error("Veuillez remplir les champs obligatoires.")
+                        st.error("Veuillez remplir les champs obligations.")
 
     # Affichage du Tableau
     st.write("### 📅 Tableau de suivi")
@@ -148,8 +148,8 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        # Configuration des proportions de colonnes ajustée pour plus de symétrie
-        repartition_colonnes = [0.6, 1.5, 4.8, 1.3, 2.5, 1.3]
+        # Statut et Action ont maintenant exactement la même dimension (2.3) pour une symétrie parfaite
+        repartition_colonnes = [0.6, 1.5, 4.2, 1.1, 2.3, 2.3]
         
         col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes)
         col_h_n.write("**N°**")
@@ -169,13 +169,13 @@ if page == "📋 Planning de l'équipe":
             col_i.write(quoi)
             col_t.write(temps)
             
-            # Affichage du statut block
+            # Affichage du statut block (prend 100% de la colonne 2.3)
             if statut == "En cours ⏳":
                 col_s.warning(statut)
             else:
                 col_s.success(statut)
                 
-            # Bouton d'action étiré sur toute la largeur de sa colonne pour la symétrie
+            # Bouton d'action (prend aussi 100% de sa colonne 2.3, s'alignant au millimètre)
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
                 if col_act.button("Fait ✅", key=f"btn_{id_t}", use_container_width=True):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
