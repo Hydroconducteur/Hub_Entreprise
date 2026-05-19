@@ -1,107 +1,54 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+import requests
 
-# --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
+# 1. Configuration de la page
+st.set_page_config(page_title="Hub Entreprise", layout="centered")
 
-VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
+st.title("🚀 Hub Entreprise")
 
-# --- CONNEXION CLOUD TURSO ---
-conn = st.connection("db", type="sql")
+# 2. Paramètres de connexion
+# Remplace par l'URL de ta base telle qu'elle apparaît dans ton dashboard Turso
+# Exemple: https://nom-de-ta-base.turso.io
+DB_URL = "https://hub-entreprise-hydroconducteur.turso.io"
 
-# --- INITIALISATION ---
-def init_db():
-    queries = [
-        "CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)",
-        "CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT)",
-        "CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY)",
-        "CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)",
-        "CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT)"
-    ]
-    for q in queries:
-        conn.session.execute(q)
-    conn.session.commit()
+# On récupère le token via les secrets de Streamlit
+# Pour le configurer : Settings > Secrets > DB_TOKEN = "ton_token_ici"
+if "DB_TOKEN" in st.secrets:
+    TOKEN = st.secrets["DB_TOKEN"]
+else:
+    st.error("Le token de base de données (DB_TOKEN) est manquant dans les secrets.")
+    st.stop()
 
-init_db()
-
-# --- ARCHIVAGE AUTOMATIQUE ---
-def nettoyer_et_archiver_data():
-    now = datetime.now(ZoneInfo("Europe/Paris"))
-    date_2w = (now - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-    date_6m = (now - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
-    date_act = now.strftime("%Y-%m-%d %H:%M:%S")
+# 3. Fonction pour interroger la base via l'API HTTP Turso
+def query_turso(sql):
+    headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Content-Type": "application/json"
+    }
+    # Turso utilise un système de pipeline pour les requêtes HTTP
+    payload = {"statements": [sql]}
     
-    conn.session.execute("INSERT INTO tchat_archive SELECT *, ? FROM tchat WHERE date_creation_brute < ?", (date_act, date_2w))
-    conn.session.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (date_2w,))
-    conn.session.execute("INSERT INTO planning_archive SELECT *, ? FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (date_act, date_2w))
-    conn.session.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (date_2w,))
-    conn.session.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (date_6m,))
-    conn.session.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (date_6m,))
-    conn.session.commit()
+    try:
+        response = requests.post(f"{DB_URL}/v2/pipeline", json=payload, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"Erreur de connexion à la base : {e}")
+        return None
 
-nettoyer_et_archiver_data()
+# 4. Interface utilisateur
+st.subheader("Consultation des données")
 
-# --- SESSION & LOGINS ---
-if "user" not in st.session_state: st.session_state.user = None
-if "role" not in st.session_state: st.session_state.role = None
-
-# Connexion via URL
-if st.session_state.user is None:
-    params = st.query_params
-    if "qui" in params:
-        p = params["qui"].strip().capitalize()
-        if p:
-            st.session_state.user = p
-            st.session_state.role = "Administrateur" if p == "Christophe" else "Employé"
-            conn.session.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (p,))
-            conn.session.commit()
-            st.rerun()
-
-# Interface Barre Latérale
-with st.sidebar:
-    st.title("🔑 Espace Connexion")
-    if st.session_state.user is None:
-        identifiant = st.text_input("Identifiant")
-        if st.button("Se connecter"):
-            if identifiant:
-                st.session_state.user = identifiant.strip().capitalize()
-                st.session_state.role = "Administrateur" if st.session_state.user == "Christophe" else "Employé"
-                conn.session.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
-                conn.session.commit()
-                st.rerun()
+if st.button("Actualiser les données"):
+    # Remplace 'ta_table' par le nom réel de ta table
+    resultat = query_turso("SELECT * FROM ta_table LIMIT 10")
+    
+    if resultat:
+        # L'API Turso renvoie les résultats dans une structure spécifique
+        # On extrait les résultats de la première requête (index 0)
+        st.write("Données reçues :")
+        st.json(resultat)
     else:
-        st.success(f"Connecté : {st.session_state.user}")
-        if st.button("Se déconnecter"): st.session_state.user = None; st.rerun()
+        st.warning("Aucune donnée trouvée ou erreur de requête.")
 
-    liste_pages = ["📋 Planning", "💬 Tchat"]
-    if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives")
-    page = st.radio("Navigation", liste_pages)
-
-# --- PAGES ---
-if st.session_state.user is None: st.stop()
-
-if page == "📋 Planning":
-    st.title("📋 Planning")
-    if st.session_state.role == "Administrateur":
-        with st.form("add_tache"):
-            t = st.text_input("Mission")
-            if st.form_submit_button("Ajouter"):
-                conn.session.execute("INSERT INTO planning (intitule, date_realisation) VALUES (?, ?)", (t, "En cours ⏳"))
-                conn.session.commit()
-    
-    taches = conn.query("SELECT * FROM planning")
-    st.table(taches)
-
-elif page == "💬 Tchat":
-    st.title("💬 Tchat")
-    msg = st.text_input("Message")
-    if st.button("Envoyer"):
-        conn.session.execute("INSERT INTO tchat (expediteur, texte, date_envoi) VALUES (?, ?, ?)", (st.session_state.user, msg, datetime.now().strftime("%H:%M")))
-        conn.session.commit()
-    st.table(conn.query("SELECT * FROM tchat"))
-
-elif page == "🗄️ Archives":
-    st.title("🗄️ Archives (6 mois)")
-    st.table(conn.query("SELECT * FROM planning_archive"))
+st.info("Cette méthode est légère et ne nécessite pas de compilation.")
