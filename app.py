@@ -142,51 +142,54 @@ if page == "📋 Planning de l'équipe":
                     else:
                         st.error("Veuillez remplir les champs obligatoires.")
 
-    # Affichage du Tableau
+    # Affichage du Tableau style Entreprise
     st.write("### 📅 Tableau de suivi")
     cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation FROM planning")
     taches = cursor.fetchall()
     
     if taches:
-        # Nouvelle répartition : on donne un max de place au Statut (3.6) pour éviter le retour à la ligne
-        repartition_colonnes = [0.8, 1.6, 4.0, 0.8, 3.6, 1.2]
+        # Grille de proportions strictes et harmonisées
+        repartition_colonnes = [0.8, 1.8, 3.8, 1.0, 3.4, 1.2]
         
+        # En-têtes du tableau entièrement centrés du début à la fin
         col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
-        col_h_n.write("**N°**")
-        col_h_q.write("**Assigné à**")
-        # Centrage horizontal du titre "Mission"
+        col_h_n.markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
+        col_h_q.markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
         col_h_i.markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
-        col_h_t.write("**Temps**")
-        col_h_s.write("**Statut / Réalisation**")
-        col_h_act.write("**Action**")
+        col_h_t.markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
+        col_h_s.markdown("<div style='text-align: center;'><b>Statut / Réalisation</b></div>", unsafe_allow_html=True)
+        col_h_act.markdown("<div style='text-align: center;'><b>Action</b></div>", unsafe_allow_html=True)
         st.write("---")
 
+        # Lignes de données
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
             
             col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
-            col_n.write(f"**{num}**")
-            col_q.write(qui)
-            # Centrage horizontal du texte de la mission
-            col_i.markdown(f"<div style='text-align: center;'>{quoi}</div>", unsafe_allow_html=True)
-            col_t.write(temps)
             
-            # Statut textuel (qui tient maintenant sur une seule ligne complète)
+            # Alignement horizontal centralisé pour chaque cellule de données
+            col_n.markdown(f"<div style='text-align: center;'><b>{num}</b></div>", unsafe_allow_html=True)
+            col_q.markdown(f"<div style='text-align: center;'>{qui}</div>", unsafe_allow_html=True)
+            col_i.markdown(f"<div style='text-align: center;'>{quoi}</div>", unsafe_allow_html=True)
+            col_t.markdown(f"<div style='text-align: center;'>{temps}</div>", unsafe_allow_html=True)
+            
+            # Affichage du Statut centré (tient désormais parfaitement sur une seule ligne)
             if statut == "En cours ⏳":
-                col_s.write("🟡 **En cours**")
+                col_s.markdown("<div style='text-align: center;'>🟡 <b>En cours</b></div>", unsafe_allow_html=True)
             else:
-                col_s.write(f"🟢 {statut}")
+                col_s.markdown(f"<div style='text-align: center;'>🟢 {statut}</div>", unsafe_allow_html=True)
                 
-            # Bouton d'action standard
+            # Gestion de la cellule d'Action
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
-                if col_act.button("Fait ✅", key=f"btn_{id_t}"):
+                if col_act.button("Fait ✅", key=f"btn_{id_t}", use_container_width=True):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
                     cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
                     conn.commit()
                     st.toast(f"Tâche {num} validée !")
                     st.rerun()
             else:
-                col_act.write("")
+                # Un tiret propre au milieu plutôt qu'un espace vide asymétrique
+                col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
             st.write("---")
     else:
         st.info("Aucune tâche prévue pour le moment.")
