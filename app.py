@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 # --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
-# Utilise un fichier localisé dans un dossier persistant du cloud
 conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -203,26 +202,42 @@ elif page == "💬 Zone Tchat":
 
     if choix_tchat == "📢 Canal #Général (Tout le monde)":
         st.subheader("📢 Canal #Général")
-        cursor.execute("SELECT expediteur, texte, date_envoi FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
+        cursor.execute("SELECT id, expediteur, texte, date_envoi FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
         messages = cursor.fetchall()
     else:
         cible = choix_tchat.replace("🔒 Privé avec ", "")
         st.subheader(f"🔒 Discussion privée avec {cible}")
         cursor.execute(
-            "SELECT expediteur, texte, date_envoi FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC",
+            "SELECT id, expediteur, texte, date_envoi FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC",
             (st.session_state.user, cible, cible, st.session_state.user)
         )
         messages = cursor.fetchall()
 
+    # Zone d'affichage des messages
     zone_msg = st.container(height=350)
     with zone_msg:
         if messages:
             for m in messages:
-                exp, txt, date = m
-                if exp == st.session_state.user:
-                    st.chat_message("user").write(f"**Vous** ({date}) : {txt}")
+                id_msg, exp, txt, date = m
+                
+                # Si l'utilisateur est Admin, on crée deux colonnes pour mettre le bouton supprimer à droite
+                if st.session_state.role == "Administrateur":
+                    col_b_msg, col_b_del = st.columns([9.5, 0.5])
+                    with col_b_msg:
+                        if exp == st.session_state.user:
+                            st.chat_message("user").write(f"**Vous** ({date}) : {txt}")
+                        else:
+                            st.chat_message("assistant").write(f"**{exp}** ({date}) : {txt}")
+                    with col_b_del:
+                        if st.button("🗑️", key=f"del_{id_msg}"):
+                            cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
+                            conn.commit()
+                            st.rerun()
                 else:
-                    st.chat_message("assistant").write(f"**{exp}** ({date}) : {txt}")
+                    if exp == st.session_state.user:
+                        st.chat_message("user").write(f"**Vous** ({date}) : {txt}")
+                    else:
+                        st.chat_message("assistant").write(f"**{exp}** ({date}) : {txt}")
         else:
             st.caption("Aucun message dans cette discussion pour le moment...")
 
