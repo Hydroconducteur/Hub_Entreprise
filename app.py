@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
-# 🔗 CONFIGURATION DE TON LIEN (Remplace par ton vrai lien si la détection automatique ne te convient pas)
-# Exemple : "https://hydroconducteur-mon-app.streamlit.app"
+# 🔗 CONFIGURATION DE TON LIEN 
+# Remplace cette adresse par le vrai lien de ton application Streamlit si nécessaire
 VOTRE_LIEN_ACTUEL = "https://hub-entreprise.streamlit.app"
 
 # --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
@@ -204,12 +204,9 @@ with st.sidebar:
         with st.expander("🔗 Liens d'accès direct", expanded=False):
             st.caption("Copie ces liens pour ton équipe (connexion automatique) :")
             
-            # Essaye de récupérer dynamiquement l'URL actuelle sur Streamlit Cloud, sinon prend la variable par défaut
             base_url = VOTRE_LIEN_ACTUEL
-            if hasattr(st, "get_option") and "browser.gatherUsageStats" in st.get_option: 
-                # Si l'URL par défaut contient encore "hub-entreprise", on met un avertissement instructif
-                if "hub-entreprise.streamlit.app" in base_url:
-                    st.warning("💡 Pense à remplacer l'adresse d'exemple par ton vrai lien dans le code (ligne 9) pour que les boutons Copier fonctionnent parfaitement.")
+            if "hub-entreprise.streamlit.app" in base_url:
+                st.warning("💡 Pense à adapter la variable `VOTRE_LIEN_ACTUEL` à la ligne 10 si l'adresse de ton application change.")
 
             st.write("Lien pour **Christophe (Admin)** :")
             st.code(f"{base_url}/?qui=Christophe", language="text")
