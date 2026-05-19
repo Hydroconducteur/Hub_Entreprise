@@ -3,10 +3,10 @@ import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-# --- CONFIGURATION DE LA PAGE ---
+# Configuration de la page
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
-# --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
+# Connexion a la base de donnée permanente
 conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -40,9 +40,7 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
 conn.commit()
 
 
-# ==========================================
-# 🧹 SYSTEME DE NETTOYAGE AUTOMATIQUE (14 JOURS)
-# ==========================================
+# Système de nettoyage au bout de 14j
 def nettoyer_ancienne_data():
     il_y_a_deux_semaines = (datetime.now(ZoneInfo("Europe/Paris")) - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
@@ -52,7 +50,7 @@ def nettoyer_ancienne_data():
 nettoyer_ancienne_data()
 
 
-# --- GESTION DE LA SESSION USER ---
+# Gestion session utilisateur
 if "user" not in st.session_state:
     st.session_state.user = None
 if "role" not in st.session_state:
@@ -60,7 +58,28 @@ if "role" not in st.session_state:
 if "navigation_page" not in st.session_state:
     st.session_state.navigation_page = "📋 Planning de l'équipe"
 
-# --- BARRE LATÉRALE (CONNEXION, NAVIGATION & MODÉRATION) ---
+
+# Système de connexion automatique par lien
+if st.session_state.user is None:
+    # On intercepte les paramètres présents dans l'URL du navigateur
+    parametres_url = st.query_params
+    if "qui" in parametres_url:
+        prenom_detecte = parametres_url["qui"].strip().capitalize()
+        if prenom_detecte != "":
+            if prenom_detecte == "Christophe":
+                st.session_state.user = "Christophe"
+                st.session_state.role = "Administrateur"
+            else:
+                st.session_state.user = prenom_detecte
+                st.session_state.role = "Employé"
+            
+            # Sauvegarde automatique dans la liste des utilisateurs
+            cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
+            conn.commit()
+            st.rerun()
+
+
+# Barre de connexion
 with st.sidebar:
     st.title("🔑 Espace Connexion")
     
@@ -88,16 +107,19 @@ with st.sidebar:
             st.session_state.user = None
             st.session_state.role = None
             st.session_state.navigation_page = "📋 Planning de l'équipe"
+            # Nettoyage URL automatique au changement de compte
+            st.query_params.clear()
             st.rerun()
             
     st.write("---")
     st.title("🗺️ Navigation")
     page = st.radio("Aller vers :", ["📋 Planning de l'équipe", "💬 Zone Tchat"], key="navigation_page")
 
-    # --- PANNEAU DE GESTION DES UTILISATEURS (EXCLUSIF ADMIN) ---
+    # Panneau gestion utilisateur pour uniquement l'admin
     if st.session_state.role == "Administrateur":
         st.write("---")
         st.title("🛡️ Modération")
+        
         with st.expander("👥 Liste des utilisateurs", expanded=False):
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
             membres = cursor.fetchall()
@@ -114,16 +136,26 @@ with st.sidebar:
                         st.rerun()
             else:
                 st.caption("Aucun employé enregistré pour le moment.")
+                
+        with st.expander("🔗 Liens d'accès direct", expanded=False):
+            st.caption("Copie ces liens pour ton équipe (connexion automatique sans mot de passe) :")
+            # Adresse site dynamique
+            base_url = "https://hub-entreprise.streamlit.app" 
+            st.code(f"{base_url}/?qui=Christophe", language="text")
+            
+            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
+            tous_les_users = cursor.fetchall()
+            for u in tous_les_users:
+                st.write(f"Lien pour **{u[0]}** :")
+                st.code(f"{base_url}/?qui={u[0]}", language="text")
 
-# --- EMPECHER L'ACCÈS SANS CONNEXION ---
+# Warning si pas co
 if st.session_state.user is None:
-    st.warning("⚠️ Veuillez entrer votre prénom dans la barre latérale pour accéder à l'application.")
+    st.warning("⚠️ Veuillez entrer votre prénom dans la barre latérale ou utiliser votre lien d'accès direct.")
     st.stop()
 
 
-# ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE
-# ==========================================
+# Page 1
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi des tâches en temps réel.")
@@ -164,7 +196,6 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        # --- CONFIGURATION DYNAMIQUE DES COLONNES (AJOUT DE LA SUPPRESSION POUR L'ADMIN) ---
         if st.session_state.role == "Administrateur":
             repartition_colonnes = [0.8, 1.5, 3.2, 1.0, 2.6, 1.2, 1.1]
             col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act, col_h_del = st.columns(repartition_colonnes, vertical_alignment="center")
@@ -221,7 +252,6 @@ if page == "📋 Planning de l'équipe":
                 else:
                     col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
             
-            # --- ACTION DE SUPPRESSION MANUELLE (EXCLUSIF ADMIN) ---
             if st.session_state.role == "Administrateur":
                 if col_del.button("🗑️", key=f"btn_del_tache_{id_t}", use_container_width=True, help="Supprimer définitivement cette tâche"):
                     cursor.execute("DELETE FROM planning WHERE id = ?", (id_t,))
@@ -234,9 +264,7 @@ if page == "📋 Planning de l'équipe":
         st.info("Aucune tâche prévue pour le moment.")
 
 
-# ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ ET GROUPÉ
-# ==========================================
+#Page 2
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     
