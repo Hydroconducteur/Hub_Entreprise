@@ -56,6 +56,8 @@ if "user" not in st.session_state:
     st.session_state.user = None
 if "role" not in st.session_state:
     st.session_state.role = None
+if "navigation_page" not in st.session_state:
+    st.session_state.navigation_page = "📋 Planning de l'équipe"
 
 # --- BARRE LATÉRALE (CONNEXION & NAVIGATION) ---
 with st.sidebar:
@@ -86,11 +88,14 @@ with st.sidebar:
         if st.button("Se déconnecter", use_container_width=True):
             st.session_state.user = None
             st.session_state.role = None
+            # Force la réinitialisation visuelle du bouton radio sur le planning
+            st.session_state.navigation_page = "📋 Planning de l'équipe"
             st.rerun()
             
     st.write("---")
     st.title("🗺️ Navigation")
-    page = st.radio("Aller vers :", ["📋 Planning de l'équipe", "💬 Zone Tchat"])
+    # Gestion forcée de la page par la session state key
+    page = st.radio("Aller vers :", ["📋 Planning de l'équipe", "💬 Zone Tchat"], key="navigation_page")
 
 # --- EMPECHER L'ACCÈS SANS CONNEXION ---
 if st.session_state.user is None:
@@ -220,7 +225,7 @@ elif page == "💬 Zone Tchat":
             for m in messages:
                 id_msg, exp, txt, date = m
                 
-                # Si l'utilisateur est Admin, on crée deux colonnes pour mettre le bouton supprimer à droite
+                # Si l'utilisateur est Admin, bouton supprimer à droite
                 if st.session_state.role == "Administrateur":
                     col_b_msg, col_b_del = st.columns([9.5, 0.5])
                     with col_b_msg:
