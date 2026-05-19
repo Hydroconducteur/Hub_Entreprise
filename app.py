@@ -140,7 +140,7 @@ if page == "📋 Planning de l'équipe":
                         st.success("Tâche ajoutée avec succès !")
                         st.rerun()
                     else:
-                        st.error("Veuillez remplir les champs obligations.")
+                        st.error("Veuillez remplir les champs obligatoires.")
 
     # Affichage du Tableau
     st.write("### 📅 Tableau de suivi")
@@ -148,8 +148,8 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        # Statut et Action ont maintenant exactement la même dimension (2.3) pour une symétrie parfaite
-        repartition_colonnes = [0.6, 1.5, 4.2, 1.1, 2.3, 2.3]
+        # Proportions ajustées pour laisser de la place à la mission et au texte du statut
+        repartition_colonnes = [0.5, 1.5, 5.0, 1.0, 2.5, 1.5]
         
         col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes)
         col_h_n.write("**N°**")
@@ -169,17 +169,17 @@ if page == "📋 Planning de l'équipe":
             col_i.write(quoi)
             col_t.write(temps)
             
-            # Affichage du statut block (prend 100% de la colonne 2.3)
+            # Affichage du statut sous forme de texte épuré (plus de gros pavé d'alerte)
             if statut == "En cours ⏳":
-                col_s.warning(statut)
+                col_s.write("🟡 **En cours**")
             else:
-                col_s.success(statut)
+                col_s.write(f"🟢 {statut}")
                 
-            # Bouton d'action (prend aussi 100% de sa colonne 2.3, s'alignant au millimètre)
+            # Bouton d'action à taille humaine standard
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
-                if col_act.button("Fait ✅", key=f"btn_{id_t}", use_container_width=True):
+                if col_act.button("Fait ✅", key=f"btn_{id_t}"):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
-                    cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Le {maintenant}", id_t))
+                    cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
                     conn.commit()
                     st.toast(f"Tâche {num} validée !")
                     st.rerun()
