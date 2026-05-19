@@ -88,13 +88,11 @@ with st.sidebar:
         if st.button("Se déconnecter", use_container_width=True):
             st.session_state.user = None
             st.session_state.role = None
-            # Force la réinitialisation visuelle du bouton radio sur le planning
             st.session_state.navigation_page = "📋 Planning de l'équipe"
             st.rerun()
             
     st.write("---")
     st.title("🗺️ Navigation")
-    # Gestion forcée de la page par la session state key
     page = st.radio("Aller vers :", ["📋 Planning de l'équipe", "💬 Zone Tchat"], key="navigation_page")
 
 # --- EMPECHER L'ACCÈS SANS CONNEXION ---
@@ -123,7 +121,6 @@ if page == "📋 Planning de l'équipe":
                 col1, col2 = st.columns(2)
                 with col1:
                     num_t = st.text_input("N° de tâche", value="001")
-                    # AUTOCOMPLÉTION : Liste déroulante des employés connus
                     if liste_employes:
                         qui = st.selectbox("Assigné à (Sélectionner un employé)", liste_employes)
                     else:
@@ -151,11 +148,14 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns([1, 2, 4, 2, 2, 2])
+        # Configuration des proportions de colonnes ajustée pour plus de symétrie
+        repartition_colonnes = [0.6, 1.5, 4.8, 1.3, 2.5, 1.3]
+        
+        col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes)
         col_h_n.write("**N°**")
         col_h_q.write("**Assigné à**")
         col_h_i.write("**Mission**")
-        col_h_t.write("**Temps prévu**")
+        col_h_t.write("**Temps**")
         col_h_s.write("**Statut / Réalisation**")
         col_h_act.write("**Action**")
         st.write("---")
@@ -163,19 +163,21 @@ if page == "📋 Planning de l'équipe":
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
             
-            col_n, col_q, col_i, col_t, col_s, col_act = st.columns([1, 2, 4, 2, 2, 2])
+            col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes)
             col_n.write(f"**{num}**")
             col_q.write(qui)
             col_i.write(quoi)
             col_t.write(temps)
             
+            # Affichage du statut block
             if statut == "En cours ⏳":
                 col_s.warning(statut)
             else:
                 col_s.success(statut)
                 
+            # Bouton d'action étiré sur toute la largeur de sa colonne pour la symétrie
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
-                if col_act.button("Fait ✅", key=f"btn_{id_t}"):
+                if col_act.button("Fait ✅", key=f"btn_{id_t}", use_container_width=True):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
                     cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Le {maintenant}", id_t))
                     conn.commit()
@@ -218,14 +220,12 @@ elif page == "💬 Zone Tchat":
         )
         messages = cursor.fetchall()
 
-    # Zone d'affichage des messages
     zone_msg = st.container(height=350)
     with zone_msg:
         if messages:
             for m in messages:
                 id_msg, exp, txt, date = m
                 
-                # Si l'utilisateur est Admin, bouton supprimer à droite
                 if st.session_state.role == "Administrateur":
                     col_b_msg, col_b_del = st.columns([9.5, 0.5])
                     with col_b_msg:
