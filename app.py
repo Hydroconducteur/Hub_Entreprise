@@ -148,10 +148,10 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        # Proportions ajustées pour laisser de la place à la mission et au texte du statut
         repartition_colonnes = [0.5, 1.5, 5.0, 1.0, 2.5, 1.5]
         
-        col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes)
+        # Aligner aussi les titres au centre verticalement pour être propre
+        col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         col_h_n.write("**N°**")
         col_h_q.write("**Assigné à**")
         col_h_i.write("**Mission**")
@@ -163,19 +163,20 @@ if page == "📋 Planning de l'équipe":
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
             
-            col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes)
+            # L'arme secrète est ici : vertical_alignment="center" harmonise la ligne complète
+            col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             col_n.write(f"**{num}**")
             col_q.write(qui)
             col_i.write(quoi)
             col_t.write(temps)
             
-            # Affichage du statut sous forme de texte épuré (plus de gros pavé d'alerte)
+            # Statut textuel
             if statut == "En cours ⏳":
                 col_s.write("🟡 **En cours**")
             else:
                 col_s.write(f"🟢 {statut}")
                 
-            # Bouton d'action à taille humaine standard
+            # Bouton d'action parfaitement centré sur la ligne
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
                 if col_act.button("Fait ✅", key=f"btn_{id_t}"):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
