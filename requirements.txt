@@ -1,5 +1,3 @@
 streamlit
 sqlalchemy
 aiosqlite
-libsql-client
-sqlalchemy-libsql
