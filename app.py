@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo # Permet de gérer le fuseau horaire français et les changements d'heure
+from zoneinfo import ZoneInfo
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
@@ -44,7 +44,6 @@ conn.commit()
 # 🧹 SYSTEME DE NETTOYAGE AUTOMATIQUE (14 JOURS)
 # ==========================================
 def nettoyer_ancienne_data():
-    # Application de l'heure française pour le calcul du nettoyage
     il_y_a_deux_semaines = (datetime.now(ZoneInfo("Europe/Paris")) - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
@@ -72,7 +71,6 @@ with st.sidebar:
         if st.button("Se connecter", use_container_width=True):
             prenom_propre = identifiant.strip().capitalize()
             if prenom_propre != "":
-                # SÉCURITÉ ADMIN : Seul Christophe peut être Admin
                 if role_choisi == "Administrateur" and prenom_propre != "Christophe":
                     st.error("❌ Accès Admin refusé. Seul Christophe est administrateur.")
                     st.session_state.user = prenom_propre
@@ -81,7 +79,6 @@ with st.sidebar:
                     st.session_state.user = prenom_propre
                     st.session_state.role = role_choisi
                 
-                # Enregistrer l'utilisateur dans la base pour l'autocomplétion de l'admin
                 cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
                 conn.commit()
                 st.rerun()
@@ -110,11 +107,8 @@ if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi des tâches en temps réel.")
 
-    # Formulaire Ajout de Tâche (Réservé à Christophe l'Admin)
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Ajouter une nouvelle tâche (Réservé Admin)", expanded=False):
-            
-            # Récupérer la liste de tous les utilisateurs connectés pour l'autocomplétion
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
             res_users = cursor.fetchall()
             liste_employes = [row[0] for row in res_users]
@@ -133,7 +127,6 @@ if page == "📋 Planning de l'équipe":
                 
                 if st.form_submit_button("Inscrire au planning"):
                     if qui and action:
-                        # Date de création brute à l'heure de Paris
                         now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                         cursor.execute(
                             "INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute) VALUES (?, ?, ?, ?, ?, ?)",
@@ -145,7 +138,6 @@ if page == "📋 Planning de l'équipe":
                     else:
                         st.error("Veuillez remplir les champs obligatoires.")
 
-    # Affichage du Tableau style Entreprise
     st.write("### 📅 Tableau de suivi")
     cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation FROM planning")
     taches = cursor.fetchall()
@@ -164,7 +156,6 @@ if page == "📋 Planning de l'équipe":
 
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
-            
             col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             
             col_n.markdown(f"<div style='text-align: center;'><b>{num}</b></div>", unsafe_allow_html=True)
@@ -177,11 +168,9 @@ if page == "📋 Planning de l'équipe":
             else:
                 col_s.markdown(f"<div style='text-align: center;'>🟢 {statut}</div>", unsafe_allow_html=True)
                 
-            # --- ACTIONS DYNAMIQUES AVEC HEURE FRANÇAISE AJUSTÉE ---
             if statut == "En cours ⏳":
                 if st.session_state.user == qui or st.session_state.role == "Administrateur":
                     if col_act.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
-                        # Capture de l'heure exacte en France (gère heure d'été/hiver)
                         maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y à %H:%M")
                         cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
                         conn.commit()
@@ -240,15 +229,17 @@ elif page == "💬 Zone Tchat":
             for m in messages:
                 id_msg, exp, txt, date = m
                 
+                # REGLAGE DU DESIGN : Alignement vertical au centre et proportions idéales
                 if st.session_state.role == "Administrateur":
-                    col_b_msg, col_b_del = st.columns([9.5, 0.5])
+                    col_b_msg, col_b_del = st.columns([9.2, 0.8], vertical_alignment="center")
                     with col_b_msg:
                         if exp == st.session_state.user:
                             st.chat_message("user").write(f"**Vous** ({date}) : {txt}")
                         else:
                             st.chat_message("assistant").write(f"**{exp}** ({date}) : {txt}")
                     with col_b_del:
-                        if st.button("🗑️", key=f"del_{id_msg}"):
+                        # Centrage parfait de l'émoticône dans un bouton carré harmonieux
+                        if st.button("🗑️", key=f"del_{id_msg}", use_container_width=True, help="Supprimer ce message pour tout le monde"):
                             cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
                             conn.commit()
                             st.rerun()
@@ -266,7 +257,6 @@ elif page == "💬 Zone Tchat":
         if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
             dest = "Tous" if choix_tchat == "📢 Canal #Général (Tout le monde)" else choix_tchat.replace("🔒 Privé avec ", "")
             
-            # Prise de l'heure française également pour l'envoi des messages du tchat
             now_paris = datetime.now(ZoneInfo("Europe/Paris"))
             maintenant_heure = now_paris.strftime("%H:%M")
             now_brute = now_paris.strftime("%Y-%m-%d %H:%M:%S")
