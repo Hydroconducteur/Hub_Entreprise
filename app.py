@@ -148,9 +148,9 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        repartition_colonnes = [0.5, 1.5, 5.0, 1.0, 2.5, 1.5]
+        # Espacement augmenté au début (1.0 et 1.8) pour donner de l'air entre le N° et l'employé
+        repartition_colonnes = [1.0, 1.8, 4.2, 1.0, 2.2, 1.8]
         
-        # Aligner aussi les titres au centre verticalement pour être propre
         col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         col_h_n.write("**N°**")
         col_h_q.write("**Assigné à**")
@@ -163,7 +163,6 @@ if page == "📋 Planning de l'équipe":
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
             
-            # L'arme secrète est ici : vertical_alignment="center" harmonise la ligne complète
             col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             col_n.write(f"**{num}**")
             col_q.write(qui)
@@ -176,7 +175,7 @@ if page == "📋 Planning de l'équipe":
             else:
                 col_s.write(f"🟢 {statut}")
                 
-            # Bouton d'action parfaitement centré sur la ligne
+            # Bouton d'action parfaitement centré
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
                 if col_act.button("Fait ✅", key=f"btn_{id_t}"):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
