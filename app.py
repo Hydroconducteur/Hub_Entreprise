@@ -105,7 +105,6 @@ with st.sidebar:
             if membres:
                 for m in membres:
                     nom_membre = m[0]
-                    # Colonnes parfaitement alignées verticalement au centre
                     col_m_nom, col_m_del = st.columns([7, 3], vertical_alignment="center")
                     col_m_nom.write(f"• **{nom_membre}**")
                     if col_m_del.button("🗑️", key=f"user_del_{nom_membre}", use_container_width=True, help=f"Supprimer {nom_membre}"):
@@ -165,20 +164,32 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        repartition_colonnes = [0.8, 1.8, 3.8, 1.0, 3.4, 1.2]
+        # --- CONFIGURATION DYNAMIQUE DES COLONNES (AJOUT DE LA SUPPRESSION POUR L'ADMIN) ---
+        if st.session_state.role == "Administrateur":
+            repartition_colonnes = [0.8, 1.5, 3.2, 1.0, 2.6, 1.2, 1.1]
+            col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act, col_h_del = st.columns(repartition_colonnes, vertical_alignment="center")
+        else:
+            repartition_colonnes = [0.8, 1.8, 3.8, 1.0, 3.4, 1.2]
+            col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         
-        col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         col_h_n.markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
         col_h_q.markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
         col_h_i.markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
         col_h_t.markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
         col_h_s.markdown("<div style='text-align: center;'><b>Statut / Réalisation</b></div>", unsafe_allow_html=True)
         col_h_act.markdown("<div style='text-align: center;'><b>Action</b></div>", unsafe_allow_html=True)
+        if st.session_state.role == "Administrateur":
+            col_h_del.markdown("<div style='text-align: center;'><b>Suppr.</b></div>", unsafe_allow_html=True)
+            
         st.write("---")
 
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
-            col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
+            
+            if st.session_state.role == "Administrateur":
+                col_n, col_q, col_i, col_t, col_s, col_act, col_del = st.columns(repartition_colonnes, vertical_alignment="center")
+            else:
+                col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             
             col_n.markdown(f"<div style='text-align: center;'><b>{num}</b></div>", unsafe_allow_html=True)
             col_q.markdown(f"<div style='text-align: center;'>{qui}</div>", unsafe_allow_html=True)
@@ -209,6 +220,14 @@ if page == "📋 Planning de l'équipe":
                         st.rerun()
                 else:
                     col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
+            
+            # --- ACTION DE SUPPRESSION MANUELLE (EXCLUSIF ADMIN) ---
+            if st.session_state.role == "Administrateur":
+                if col_del.button("🗑️", key=f"btn_del_tache_{id_t}", use_container_width=True, help="Supprimer définitivement cette tâche"):
+                    cursor.execute("DELETE FROM planning WHERE id = ?", (id_t,))
+                    conn.commit()
+                    st.toast(f"Tâche {num} définitivement supprimée.")
+                    st.rerun()
                     
             st.write("---")
     else:
