@@ -1,6 +1,7 @@
 import streamlit as st
 import sqlite3
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo # Permet de gérer le fuseau horaire français et les changements d'heure
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
@@ -43,7 +44,8 @@ conn.commit()
 # 🧹 SYSTEME DE NETTOYAGE AUTOMATIQUE (14 JOURS)
 # ==========================================
 def nettoyer_ancienne_data():
-    il_y_a_deux_semaines = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
+    # Application de l'heure française pour le calcul du nettoyage
+    il_y_a_deux_semaines = (datetime.now(ZoneInfo("Europe/Paris")) - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     conn.commit()
@@ -131,7 +133,8 @@ if page == "📋 Planning de l'équipe":
                 
                 if st.form_submit_button("Inscrire au planning"):
                     if qui and action:
-                        now_brute = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        # Date de création brute à l'heure de Paris
+                        now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                         cursor.execute(
                             "INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute) VALUES (?, ?, ?, ?, ?, ?)",
                             (num_t, qui, action, temps, "En cours ⏳", now_brute)
@@ -148,10 +151,8 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        # Grille de proportions strictes et harmonisées
         repartition_colonnes = [0.8, 1.8, 3.8, 1.0, 3.4, 1.2]
         
-        # En-têtes du tableau entièrement centrés du début à la fin
         col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         col_h_n.markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
         col_h_q.markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
@@ -161,30 +162,27 @@ if page == "📋 Planning de l'équipe":
         col_h_act.markdown("<div style='text-align: center;'><b>Action</b></div>", unsafe_allow_html=True)
         st.write("---")
 
-        # Lignes de données
         for t in taches:
             id_t, num, qui, quoi, temps, statut = t
             
             col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             
-            # Alignement horizontal centralisé pour chaque cellule de données
             col_n.markdown(f"<div style='text-align: center;'><b>{num}</b></div>", unsafe_allow_html=True)
             col_q.markdown(f"<div style='text-align: center;'>{qui}</div>", unsafe_allow_html=True)
             col_i.markdown(f"<div style='text-align: center;'>{quoi}</div>", unsafe_allow_html=True)
             col_t.markdown(f"<div style='text-align: center;'>{temps}</div>", unsafe_allow_html=True)
             
-            # Affichage du Statut centré
             if statut == "En cours ⏳":
                 col_s.markdown("<div style='text-align: center;'>🟡 <b>En cours</b></div>", unsafe_allow_html=True)
             else:
                 col_s.markdown(f"<div style='text-align: center;'>🟢 {statut}</div>", unsafe_allow_html=True)
                 
-            # --- GESTION DYNAMIQUE DE LA CELLULE D'ACTION (AVEC DROIT À L'ERREUR) ---
+            # --- ACTIONS DYNAMIQUES AVEC HEURE FRANÇAISE AJUSTÉE ---
             if statut == "En cours ⏳":
-                # Si la tâche est en cours, afficher le bouton "Fait ✅" si l'utilisateur a les droits
                 if st.session_state.user == qui or st.session_state.role == "Administrateur":
                     if col_act.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
-                        maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
+                        # Capture de l'heure exacte en France (gère heure d'été/hiver)
+                        maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y à %H:%M")
                         cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
                         conn.commit()
                         st.toast(f"Tâche {num} validée !")
@@ -192,7 +190,6 @@ if page == "📋 Planning de l'équipe":
                 else:
                     col_act.markdown("<div style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
             else:
-                # Si la tâche est finie, on permet de faire machine arrière avec "Annuler ↩️"
                 if st.session_state.user == qui or st.session_state.role == "Administrateur":
                     if col_act.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
                         cursor.execute("UPDATE planning SET date_realisation = 'En cours ⏳' WHERE id = ?", (id_t,))
@@ -268,8 +265,11 @@ elif page == "💬 Zone Tchat":
         nouveau_msg = col_txt.text_input("Votre message...", label_visibility="collapsed")
         if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
             dest = "Tous" if choix_tchat == "📢 Canal #Général (Tout le monde)" else choix_tchat.replace("🔒 Privé avec ", "")
-            maintenant_heure = datetime.now().strftime("%H:%M")
-            now_brute = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Prise de l'heure française également pour l'envoi des messages du tchat
+            now_paris = datetime.now(ZoneInfo("Europe/Paris"))
+            maintenant_heure = now_paris.strftime("%H:%M")
+            now_brute = now_paris.strftime("%Y-%m-%d %H:%M:%S")
             
             cursor.execute(
                 "INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute) VALUES (?, ?, ?, ?, ?)",
