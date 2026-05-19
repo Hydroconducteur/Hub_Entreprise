@@ -1,45 +1,43 @@
 import streamlit as st
+import sqlite3
 from datetime import datetime, timedelta
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 # --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
-# Utilise la connexion sécurisée configurée dans les Secrets Streamlit
-try:
-    conn = st.connection("sql", type="sql")
-except Exception:
-    # Solution de secours locale si tu le testes sur ton PC
-    import sqlite3
-    conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
+# Utilise un fichier localisé dans un dossier persistant du cloud
+conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
+cursor = conn.cursor()
 
 # Création des tables si elles n'existent pas
-with conn.session as session:
-    session.execute("""
-    CREATE TABLE IF NOT EXISTS planning (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        num_tache TEXT,
-        assigne_a TEXT,
-        intitule TEXT,
-        temps_estime TEXT,
-        date_realisation TEXT,
-        date_creation_brute TEXT
-    )""")
-    session.execute("""
-    CREATE TABLE IF NOT EXISTS tchat (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        expediteur TEXT,
-        destinataire TEXT,
-        texte TEXT,
-        date_envoi TEXT,
-        date_creation_brute TEXT
-    )""")
-    # Table pour se souvenir des employés connectés
-    session.execute("""
-    CREATE TABLE IF NOT EXISTS utilisateurs (
-        prenom TEXT PRIMARY KEY
-    )""")
-    session.commit()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS planning (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    num_tache TEXT,
+    assigne_a TEXT,
+    intitule TEXT,
+    temps_estime TEXT,
+    date_realisation TEXT,
+    date_creation_brute TEXT
+)""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tchat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    expediteur TEXT,
+    destinataire TEXT,
+    texte TEXT,
+    date_envoi TEXT,
+    date_creation_brute TEXT
+)""")
+
+# Table pour se souvenir des employés connectés
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS utilisateurs (
+    prenom TEXT PRIMARY KEY
+)""")
+conn.commit()
 
 
 # ==========================================
@@ -47,10 +45,9 @@ with conn.session as session:
 # ==========================================
 def nettoyer_ancienne_data():
     il_y_a_deux_semaines = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-    with conn.session as session:
-        session.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
-        session.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
-        session.commit()
+    cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
+    cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
+    conn.commit()
 
 nettoyer_ancienne_data()
 
@@ -82,9 +79,8 @@ with st.sidebar:
                     st.session_state.role = role_choisi
                 
                 # Enregistrer l'utilisateur dans la base pour l'autocomplétion de l'admin
-                with conn.session as session:
-                    session.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
-                    session.commit()
+                cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
+                conn.commit()
                 st.rerun()
     else:
         st.success(f"Connecté : {st.session_state.user} ({st.session_state.role})")
@@ -115,8 +111,8 @@ if page == "📋 Planning de l'équipe":
         with st.expander("➕ Ajouter une nouvelle tâche (Réservé Admin)", expanded=False):
             
             # Récupérer la liste de tous les utilisateurs connectés pour l'autocomplétion
-            with conn.session as session:
-                res_users = session.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'").fetchall()
+            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
+            res_users = cursor.fetchall()
             liste_employes = [row[0] for row in res_users]
             
             with st.form("form_tache"):
@@ -135,12 +131,11 @@ if page == "📋 Planning de l'équipe":
                 if st.form_submit_button("Inscrire au planning"):
                     if qui and action:
                         now_brute = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        with conn.session as session:
-                            session.execute(
-                                "INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute) VALUES (?, ?, ?, ?, ?, ?)",
-                                (num_t, qui, action, temps, "En cours ⏳", now_brute)
-                            )
-                            session.commit()
+                        cursor.execute(
+                            "INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute) VALUES (?, ?, ?, ?, ?, ?)",
+                            (num_t, qui, action, temps, "En cours ⏳", now_brute)
+                        )
+                        conn.commit()
                         st.success("Tâche ajoutée avec succès !")
                         st.rerun()
                     else:
@@ -148,8 +143,8 @@ if page == "📋 Planning de l'équipe":
 
     # Affichage du Tableau
     st.write("### 📅 Tableau de suivi")
-    with conn.session as session:
-        taches = session.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation FROM planning").fetchall()
+    cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation FROM planning")
+    taches = cursor.fetchall()
     
     if taches:
         col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns([1, 2, 4, 2, 2, 2])
@@ -178,9 +173,8 @@ if page == "📋 Planning de l'équipe":
             if statut == "En cours ⏳" and (st.session_state.user == qui or st.session_state.role == "Administrateur"):
                 if col_act.button("Fait ✅", key=f"btn_{id_t}"):
                     maintenant = datetime.now().strftime("%d/%m/%Y à %H:%M")
-                    with conn.session as session:
-                        session.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Le {maintenant}", id_t))
-                        session.commit()
+                    cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Le {maintenant}", id_t))
+                    conn.commit()
                     st.toast(f"Tâche {num} validée !")
                     st.rerun()
             else:
@@ -196,10 +190,10 @@ if page == "📋 Planning de l'équipe":
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     
-    with conn.session as session:
-        res_users = session.execute("SELECT prenom FROM utilisateurs").fetchall()
+    cursor.execute("SELECT prenom FROM utilisateurs")
+    res_users = cursor.fetchall()
     employes = [row[0] for row in res_users]
-    if "Christophe" not in employees:
+    if "Christophe" not in employes:
         employes.append("Christophe")
         
     options_tchat = ["📢 Canal #Général (Tout le monde)"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
@@ -209,16 +203,16 @@ elif page == "💬 Zone Tchat":
 
     if choix_tchat == "📢 Canal #Général (Tout le monde)":
         st.subheader("📢 Canal #Général")
-        with conn.session as session:
-            messages = session.execute("SELECT expediteur, texte, date_envoi FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC").fetchall()
+        cursor.execute("SELECT expediteur, texte, date_envoi FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
+        messages = cursor.fetchall()
     else:
         cible = choix_tchat.replace("🔒 Privé avec ", "")
         st.subheader(f"🔒 Discussion privée avec {cible}")
-        with conn.session as session:
-            messages = session.execute(
-                "SELECT expediteur, texte, date_envoi FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC",
-                (st.session_state.user, cible, cible, st.session_state.user)
-            ).fetchall()
+        cursor.execute(
+            "SELECT expediteur, texte, date_envoi FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC",
+            (st.session_state.user, cible, cible, st.session_state.user)
+        )
+        messages = cursor.fetchall()
 
     zone_msg = st.container(height=350)
     with zone_msg:
@@ -240,10 +234,9 @@ elif page == "💬 Zone Tchat":
             maintenant_heure = datetime.now().strftime("%H:%M")
             now_brute = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            with conn.session as session:
-                session.execute(
-                    "INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute) VALUES (?, ?, ?, ?, ?)",
-                    (st.session_state.user, dest, nouveau_msg.strip(), maintenant_heure, now_brute)
-                )
-                session.commit()
+            cursor.execute(
+                "INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute) VALUES (?, ?, ?, ?, ?)",
+                (st.session_state.user, dest, nouveau_msg.strip(), maintenant_heure, now_brute)
+            )
+            conn.commit()
             st.rerun()
