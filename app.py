@@ -3,10 +3,10 @@ import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-# Configuration de la page
+# --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
-# Connexion a la base de donnée permanente
+# --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
 conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS planning (
     intitule TEXT,
     temps_estime TEXT,
     date_realisation TEXT,
-    date_creation_brute TEXT
+    date_creation_brute TEXT,
+    priorite TEXT
 )""")
 
 cursor.execute("""
@@ -39,8 +40,18 @@ CREATE TABLE IF NOT EXISTS utilisateurs (
 )""")
 conn.commit()
 
+# --- MIGRATION DE SÉCURITÉ (Ajoute la colonne priorité si la BDD existait déjà) ---
+try:
+    cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
+    conn.commit()
+except sqlite3.OperationalError:
+    # La colonne existe déjà, on ne fait rien
+    pass
 
-# Système de nettoyage au bout de 14j
+
+# ==========================================
+# 🧹 SYSTEME DE NETTOYAGE AUTOMATIQUE (14 JOURS)
+# ==========================================
 def nettoyer_ancienne_data():
     il_y_a_deux_semaines = (datetime.now(ZoneInfo("Europe/Paris")) - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
@@ -50,7 +61,7 @@ def nettoyer_ancienne_data():
 nettoyer_ancienne_data()
 
 
-# Gestion session utilisateur
+# --- GESTION DE LA SESSION USER ---
 if "user" not in st.session_state:
     st.session_state.user = None
 if "role" not in st.session_state:
@@ -59,9 +70,10 @@ if "navigation_page" not in st.session_state:
     st.session_state.navigation_page = "📋 Planning de l'équipe"
 
 
-# Système de connexion automatique par lien
+# ==========================================================
+# 🚀 SYSTEME DE CONNEXION AUTOMATIQUE VIA LIEN (?qui=Prenom)
+# ==========================================================
 if st.session_state.user is None:
-    # On intercepte les paramètres présents dans l'URL du navigateur
     parametres_url = st.query_params
     if "qui" in parametres_url:
         prenom_detecte = parametres_url["qui"].strip().capitalize()
@@ -73,13 +85,12 @@ if st.session_state.user is None:
                 st.session_state.user = prenom_detecte
                 st.session_state.role = "Employé"
             
-            # Sauvegarde automatique dans la liste des utilisateurs
             cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
             conn.commit()
             st.rerun()
 
 
-# Barre de connexion
+# --- BARRE LATÉRALE (CONNEXION, NAVIGATION & MODÉRATION) ---
 with st.sidebar:
     st.title("🔑 Espace Connexion")
     
@@ -107,7 +118,6 @@ with st.sidebar:
             st.session_state.user = None
             st.session_state.role = None
             st.session_state.navigation_page = "📋 Planning de l'équipe"
-            # Nettoyage URL automatique au changement de compte
             st.query_params.clear()
             st.rerun()
             
@@ -115,7 +125,7 @@ with st.sidebar:
     st.title("🗺️ Navigation")
     page = st.radio("Aller vers :", ["📋 Planning de l'équipe", "💬 Zone Tchat"], key="navigation_page")
 
-    # Panneau gestion utilisateur pour uniquement l'admin
+    # --- PANNEAU DE GESTION DES UTILISATEURS (EXCLUSIF ADMIN) ---
     if st.session_state.role == "Administrateur":
         st.write("---")
         st.title("🛡️ Modération")
@@ -138,8 +148,7 @@ with st.sidebar:
                 st.caption("Aucun employé enregistré pour le moment.")
                 
         with st.expander("🔗 Liens d'accès direct", expanded=False):
-            st.caption("Copie ces liens pour ton équipe (connexion automatique sans mot de passe) :")
-            # Adresse site dynamique
+            st.caption("Copie ces liens pour ton équipe (connexion automatique) :")
             base_url = "https://hub-entreprise.streamlit.app" 
             st.code(f"{base_url}/?qui=Christophe", language="text")
             
@@ -149,13 +158,15 @@ with st.sidebar:
                 st.write(f"Lien pour **{u[0]}** :")
                 st.code(f"{base_url}/?qui={u[0]}", language="text")
 
-# Warning si pas co
+# --- EMPECHER L'ACCÈS SANS CONNEXION ---
 if st.session_state.user is None:
     st.warning("⚠️ Veuillez entrer votre prénom dans la barre latérale ou utiliser votre lien d'accès direct.")
     st.stop()
 
 
-# Page 1
+# ==========================================
+# PAGE 1 : LE PLANNING DYNAMIQUE
+# ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi des tâches en temps réel.")
@@ -174,6 +185,12 @@ if page == "📋 Planning de l'équipe":
                         qui = st.selectbox("Assigné à (Sélectionner un employé)", liste_employes)
                     else:
                         qui = st.text_input("Assigné à (Aucun employé connecté pour l'instant, tapez son nom)")
+                    
+                    # NOUVEAU : Sélection de la priorité / Urgence demandé par le patron
+                    priorite_choisie = st.selectbox(
+                        "Niveau d'urgence / Importance", 
+                        ["🟢 Pas très important", "🟠 Important", "🔴 Très urgent"]
+                    )
                 with col2:
                     temps = st.text_input("Temps approximatif (ex: 2h30, 1j)")
                     action = st.text_area("Intitulé / Travail à réaliser")
@@ -182,8 +199,8 @@ if page == "📋 Planning de l'équipe":
                     if qui and action:
                         now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                         cursor.execute(
-                            "INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute) VALUES (?, ?, ?, ?, ?, ?)",
-                            (num_t, qui, action, temps, "En cours ⏳", now_brute)
+                            "INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            (num_t, qui, action, temps, "En cours ⏳", now_brute, priorite_choisie)
                         )
                         conn.commit()
                         st.success("Tâche ajoutée avec succès !")
@@ -192,20 +209,22 @@ if page == "📋 Planning de l'équipe":
                         st.error("Veuillez remplir les champs obligatoires.")
 
     st.write("### 📅 Tableau de suivi")
-    cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation FROM planning")
+    cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite FROM planning")
     taches = cursor.fetchall()
     
     if taches:
+        # --- CONFIGURATION DYNAMIQUE DES COLONNES AVEC INTÉGRATION DE L'URGENCE ---
         if st.session_state.role == "Administrateur":
-            repartition_colonnes = [0.8, 1.5, 3.2, 1.0, 2.6, 1.2, 1.1]
-            col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act, col_h_del = st.columns(repartition_colonnes, vertical_alignment="center")
+            repartition_colonnes = [0.7, 1.4, 2.8, 1.8, 0.8, 2.2, 1.1, 1.0]
+            col_h_n, col_h_q, col_h_i, col_h_p, col_h_t, col_h_s, col_h_act, col_h_del = st.columns(repartition_colonnes, vertical_alignment="center")
         else:
-            repartition_colonnes = [0.8, 1.8, 3.8, 1.0, 3.4, 1.2]
-            col_h_n, col_h_q, col_h_i, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
+            repartition_colonnes = [0.7, 1.5, 3.2, 1.9, 0.9, 2.4, 1.1]
+            col_h_n, col_h_q, col_h_i, col_h_p, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         
         col_h_n.markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
         col_h_q.markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
         col_h_i.markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
+        col_h_p.markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
         col_h_t.markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
         col_h_s.markdown("<div style='text-align: center;'><b>Statut / Réalisation</b></div>", unsafe_allow_html=True)
         col_h_act.markdown("<div style='text-align: center;'><b>Action</b></div>", unsafe_allow_html=True)
@@ -215,16 +234,24 @@ if page == "📋 Planning de l'équipe":
         st.write("---")
 
         for t in taches:
-            id_t, num, qui, quoi, temps, statut = t
+            id_t, num, qui, quoi, temps, statut, priorite = t
+            
+            # Gestion des anciennes lignes créées avant la mise à jour
+            if not priorite:
+                priorite = "🟢 Pas très important"
             
             if st.session_state.role == "Administrateur":
-                col_n, col_q, col_i, col_t, col_s, col_act, col_del = st.columns(repartition_colonnes, vertical_alignment="center")
+                col_n, col_q, col_i, col_p, col_t, col_s, col_act, col_del = st.columns(repartition_colonnes, vertical_alignment="center")
             else:
-                col_n, col_q, col_i, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
+                col_n, col_q, col_i, col_p, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             
             col_n.markdown(f"<div style='text-align: center;'><b>{num}</b></div>", unsafe_allow_html=True)
             col_q.markdown(f"<div style='text-align: center;'>{qui}</div>", unsafe_allow_html=True)
             col_i.markdown(f"<div style='text-align: center;'>{quoi}</div>", unsafe_allow_html=True)
+            
+            # Affichage de la couleur de priorité demandée par le patron
+            col_p.markdown(f"<div style='text-align: center;'>{priorite}</div>", unsafe_allow_html=True)
+            
             col_t.markdown(f"<div style='text-align: center;'>{temps}</div>", unsafe_allow_html=True)
             
             if statut == "En cours ⏳":
@@ -264,7 +291,9 @@ if page == "📋 Planning de l'équipe":
         st.info("Aucune tâche prévue pour le moment.")
 
 
-#Page 2
+# ==========================================
+# PAGE 2 : LE TCHAT PRIVÉ ET GROUPÉ
+# ==========================================
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     
