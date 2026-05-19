@@ -60,7 +60,7 @@ if "role" not in st.session_state:
 if "navigation_page" not in st.session_state:
     st.session_state.navigation_page = "📋 Planning de l'équipe"
 
-# --- BARRE LATÉRALE (CONNEXION & NAVIGATION) ---
+# --- BARRE LATÉRALE (CONNEXION, NAVIGATION & MODÉRATION) ---
 with st.sidebar:
     st.title("🔑 Espace Connexion")
     
@@ -93,6 +93,28 @@ with st.sidebar:
     st.write("---")
     st.title("🗺️ Navigation")
     page = st.radio("Aller vers :", ["📋 Planning de l'équipe", "💬 Zone Tchat"], key="navigation_page")
+
+    # --- PANNEAU DE GESTION DES UTILISATEURS (EXCLUSIF ADMIN) ---
+    if st.session_state.role == "Administrateur":
+        st.write("---")
+        st.title("🛡️ Modération")
+        with st.expander("👥 Liste des utilisateurs", expanded=False):
+            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
+            membres = cursor.fetchall()
+            
+            if membres:
+                for m in membres:
+                    nom_membre = m[0]
+                    # Colonnes parfaitement alignées verticalement au centre
+                    col_m_nom, col_m_del = st.columns([7, 3], vertical_alignment="center")
+                    col_m_nom.write(f"• **{nom_membre}**")
+                    if col_m_del.button("🗑️", key=f"user_del_{nom_membre}", use_container_width=True, help=f"Supprimer {nom_membre}"):
+                        cursor.execute("DELETE FROM utilisateurs WHERE prenom = ?", (nom_membre,))
+                        conn.commit()
+                        st.toast(f"Utilisateur {nom_membre} supprimé de la base.")
+                        st.rerun()
+            else:
+                st.caption("Aucun employé enregistré pour le moment.")
 
 # --- EMPECHER L'ACCÈS SANS CONNEXION ---
 if st.session_state.user is None:
@@ -229,7 +251,6 @@ elif page == "💬 Zone Tchat":
             for m in messages:
                 id_msg, exp, txt, date = m
                 
-                # REGLAGE DU DESIGN : Alignement vertical au centre et proportions idéales
                 if st.session_state.role == "Administrateur":
                     col_b_msg, col_b_del = st.columns([9.2, 0.8], vertical_alignment="center")
                     with col_b_msg:
@@ -238,8 +259,7 @@ elif page == "💬 Zone Tchat":
                         else:
                             st.chat_message("assistant").write(f"**{exp}** ({date}) : {txt}")
                     with col_b_del:
-                        # Centrage parfait de l'émoticône dans un bouton carré harmonieux
-                        if st.button("🗑️", key=f"del_{id_msg}", use_container_width=True, help="Supprimer ce message pour tout le monde"):
+                        if st.button("🗑️", key=f"del_{id_msg}", use_container_width=True, help="Supprimer ce message"):
                             cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
                             conn.commit()
                             st.rerun()
