@@ -6,9 +6,8 @@ from zoneinfo import ZoneInfo
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
-# 🔗 CONFIGURATION DE TON LIEN 
-# Remplace cette adresse par le vrai lien de ton application Streamlit si nécessaire
-VOTRE_LIEN_ACTUEL = "https://hub-entreprise.streamlit.app"
+# Adresse par défault
+VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
 # --- CONNEXION BASE DE DONNÉES CLOUD PERMANENTE ---
 conn = sqlite3.connect("donnees_permanentes.db", check_same_thread=False)
