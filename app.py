@@ -247,6 +247,21 @@ with st.sidebar:
             else:
                 st.caption("Aucun employé connecté.")
 
+        # 🔗 RESTAURÉ : LIENS MAGIQUES DE CONNEXION DIRECTE
+        with st.expander("🔗 Liens d'accès direct", expanded=False):
+            st.caption("Liens magiques de connexion automatique :")
+            base_url = VOTRE_LIEN_ACTUEL
+
+            st.write("Lien **Christophe** :")
+            st.code(f"{base_url}/?qui=Christophe", language="text")
+            
+            st.write("Lien **Chris** :")
+            st.code(f"{base_url}/?qui=Chris", language="text")
+            
+            for u in membres:
+                st.write(f"Lien **{u[0]}** :")
+                st.code(f"{base_url}/?qui={u[0]}", language="text")
+
 
 # ==========================================
 # PAGE 1 : LE PLANNING DYNAMIQUE RESPONSIVE
@@ -279,7 +294,6 @@ if page == "📋 Planning de l'équipe":
 
     st.write("### 📅 Liste des tâches")
     
-    # ⚡ FRAGMENT AUTONOME : Seul ce bloc se rafraîchit toutes les 8 secondes
     @st.fragment(run_every=8)
     def afficher_tableau_taches():
         cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite FROM planning")
@@ -367,7 +381,6 @@ elif page == "💬 Zone Tchat":
     choix_tchat = st.selectbox("Discussion active :", options_tchat)
     st.write("---")
 
-    # ⚡ FRAGMENT AUTONOME POUR LES MESSAGES (Actualise le flux sans couper la saisie de texte)
     @st.fragment(run_every=6)
     def afficher_flux_messages(cible_tchat):
         if cible_tchat == "📢 Canal #Général":
