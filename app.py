@@ -3,7 +3,7 @@ import requests
 import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-import time
+from streamlit_autorefresh import st_autorefresh  # Nouveau composant importé
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
@@ -12,13 +12,11 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
 # ==========================================================
-# ⏱️ CONFIGURATION DU RAFRAÎCHISSEMENT AUTOMATIQUE
+# ⏱️ CONFIGURATION DU RAFRAÎCHISSEMENT AUTOMATIQUE GLOBAL
 # ==========================================================
-if "last_refresh" not in st.session_state:
-    st.session_state.last_refresh = time.time()
-
-# L'écran se synchronise automatiquement toutes les 10 secondes
-st.fragment(run_every=10)(lambda: None)()
+# Cette ligne rafraîchit TOUTE la page toutes les 10 secondes (10000 millisecondes)
+# key="global_refresh" permet d'éviter que le tchat ne perde le focus pendant la saisie
+st_autorefresh(interval=10000, key="global_refresh")
 
 
 # --- INJECTION CSS RESPONSIVE ---
@@ -147,7 +145,7 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION DE LA BASE (CORRIGÉ : PLUS DE CACHE BLOQUANT) ---
+# --- INITIALISATION DE LA BASE ---
 def initialiser_structure_base():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS planning (
@@ -357,7 +355,7 @@ with st.sidebar:
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi en temps réel des tâches actives (Actualisé en direct ⏱️).")
+    st.caption("Suivi en temps réel des tâches actives (Actualisé automatiquement ⏱️).")
 
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
