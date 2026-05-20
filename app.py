@@ -190,44 +190,45 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE (TEMPS RÉEL HORAIRE) ---
-@st.cache_data(ttl=60) # Rafraîchi chaque minute pour être précis sur l'horaire 8h-20h
+# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE TOUT-EN-UN (SÉCURISÉ) ---
+@st.cache_data(ttl=60)
 def nettoyer_et_archiver_data():
-    now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-    heure_actuelle = now_paris.hour
-    date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
-    
-    # 1. GESTION DU TCHAT : En dehors de 8h-20h, on bascule les messages en archive
-    if heure_actuelle >= 20 or heure_actuelle < 8:
-        # On copie tout le tchat actif vers l'archive
-        cursor.execute("""
-            INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage, garder_permanent)
-            SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?, garder_permanent FROM tchat
-        """, (date_actuelle_str,))
-        # On vide la zone de tchat actif pour le lendemain
-        cursor.execute("DELETE FROM tchat")
-        conn.commit()
+    try:
+        now_paris = datetime.now(ZoneInfo("Europe/Paris"))
+        heure_actuelle = now_paris.hour
+        date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 1. GESTION DU TCHAT : En dehors de 8h-20h, on bascule les messages en archive
+        if heure_actuelle >= 20 or heure_actuelle < 8:
+            # On vérifie d'abord s'il y a des messages à archiver pour éviter d'insérer du vide
+            cursor.execute("SELECT COUNT(*) FROM tchat")
+            if cursor.fetchone()[0] > 0:
+                cursor.execute("""
+                    INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage, garder_permanent)
+                    SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?, garder_permanent FROM tchat
+                """, (date_actuelle_str,))
+                cursor.execute("DELETE FROM tchat")
+                conn.commit()
 
-    # 2. GESTION DE LA PURGE DES ARCHIVES TCHAT (Suppression définitive après 2 semaines)
-    # Calcule la date limite (il y a 14 jours)
-    il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-    
-    # On supprime définitivement les messages de plus de 2 semaines UNIQUEMENT si garder_permanent = 0
-    cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
-    conn.commit()
-    
-    # 3. GESTION DU PLANNING (Reste inchangé : archivage des tâches closes après 14 jours)
-    cursor.execute("""
-        INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
-        SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
-        FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?
-    """, (date_actuelle_str, il_y_a_deux_semaines))
-    cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
-    
-    # Sécurité globale 6 mois pour le planning historique
-    il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
-    conn.commit()
+        # 2. GESTION DE LA PURGE DES ARCHIVES TCHAT (Après 14 jours si non permanents)
+        il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
+        conn.commit()
+        
+        # 3. GESTION DU PLANNING
+        cursor.execute("""
+            INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
+            SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
+            FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?
+        """, (date_actuelle_str, il_y_a_deux_semaines))
+        cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
+        
+        il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
+        conn.commit()
+    except Exception as e:
+        # Permet à l'application de ne pas planter complètement si Turso a un problème de connexion momentané
+        pass
     return True
 
 nettoyer_et_archiver_data()
@@ -432,7 +433,7 @@ if page == "📋 Planning de l'équipe":
 
 
 # ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ + BOUTON ÉPINGLE
+# PAGE 2 : LE TCHAT PRIVÉ
 # ==========================================
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
@@ -463,7 +464,6 @@ elif page == "💬 Zone Tchat":
                 for m in messages:
                     id_msg, exp, txt, date, permanent = m
                     
-                    # Définition des boutons d'action à droite du message
                     base_largeur = [8.5, 0.75, 0.75] if st.session_state.role == "Administrateur" else [9.2, 0.8]
                     cols_msg = st.columns(base_largeur, vertical_alignment="center")
                     
@@ -471,7 +471,7 @@ elif page == "💬 Zone Tchat":
                         label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
                         st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
                     
-                    # Bouton Épingle pour conserver indéfiniment
+                    # Bouton Épingle
                     icon_epingle = "📍" if permanent == 1 else "📌"
                     tip_epingle = "Ne pas archiver/supprimer" if permanent == 0 else "Enlever la sauvegarde permanente"
                     if cols_msg[1].button(icon_epingle, key=f"pin_live_{id_msg}", help=tip_epingle, use_container_width=True):
@@ -480,7 +480,7 @@ elif page == "💬 Zone Tchat":
                         conn.commit()
                         st.rerun()
                         
-                    # Bouton Supprimer pour l'admin
+                    # Bouton Supprimer
                     if st.session_state.role == "Administrateur":
                         if cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
                             cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
@@ -503,7 +503,7 @@ elif page == "💬 Zone Tchat":
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES (TCHAT AVEC REGLE DES 2 SEMAINES)
+# 🗄️ PAGE 3 : ARCHIVES
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
@@ -576,11 +576,10 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         label_perm_arch = " 📌 [SAUVEGARDÉ INDÉFINIMENT]" if permanent_arch == 1 else ""
                         st.write(f"📢 **[{dest}]** *({date_brute})*{label_perm_arch} **{exp}** : {txt}")
                     
-                    # Bouton Épingle depuis la zone d'archive
+                    # Bouton Épingle depuis la zone d'archive (LIGNE FIXÉE ICI)
                     icon_epingle_arch = "📍" if permanent_arch == 1 else "📌"
                     if col_b_pin.button(icon_epingle_arch, key=f"pin_arch_{id_msg_arch}", use_container_width=True):
                         nouvel_etat_arch = 0 if permanent_arch == 1 else 1
-                        cursor.execute("UPDATE tchat_archive WHERE id = ?", (id_msg_arch,))
                         cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (nouvel_etat_arch, id_msg_arch))
                         conn.commit()
                         st.rerun()
