@@ -19,6 +19,10 @@ class TursoAdapter:
         self.last_fetched_rows = []
 
     def execute(self, sql, params=()):
+        # Utilisation d'une session persistante (HTTP Keep-Alive) pour éliminer la latence réseau
+        if "turso_session" not in st.session_state:
+            st.session_state.turso_session = requests.Session()
+            
         headers = {
             "Authorization": f"Bearer {TOKEN}",
             "Content-Type": "application/json"
@@ -42,7 +46,8 @@ class TursoAdapter:
             ]
         }
         
-        resp = requests.post(f"{DB_URL}/v2/pipeline", json=payload, headers=headers)
+        # Appel via la session persistante de la session_state
+        resp = st.session_state.turso_session.post(f"{DB_URL}/v2/pipeline", json=payload, headers=headers)
         
         if resp.status_code != 200:
             raise sqlite3.OperationalError(f"Erreur HTTP {resp.status_code}: {resp.text}")
@@ -95,10 +100,9 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION DE LA BASE (OPTIMISÉE : S'EXÉCUTE 1 SEULE FOIS AU DÉMARRAGE) ---
+# --- INITIALISATION DE LA BASE (S'EXÉCUTE 1 SEULE FOIS) ---
 @st.cache_resource
 def initialiser_structure_base():
-    # Création des tables actives si elles n'existent pas
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS planning (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,7 +130,6 @@ def initialiser_structure_base():
         prenom TEXT PRIMARY KEY
     )""")
 
-    # Création des tables d'ARCHIVES
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS planning_archive (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,7 +154,6 @@ def initialiser_structure_base():
         date_archivage TEXT
     )""")
     
-    # Migration de sécurité
     try:
         cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError:
@@ -160,21 +162,19 @@ def initialiser_structure_base():
     conn.commit()
     return True
 
-# Lancement unique de la configuration de la base
 initialiser_structure_base()
 
 
 # =========================================================================
-# 🧹 SYSTEME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE (OPTIMISÉ : 1 FOIS TOUTES LES 12H)
+# 🧹 NETTOYAGE & ARCHIVAGE (OPTIMISÉ : 1 FOIS TOUTES LES 12H)
 # =========================================================================
-@st.cache_data(ttl=43200) # 43200 secondes = 12 heures
+@st.cache_data(ttl=43200)
 def nettoyer_et_archiver_data():
     now_paris = datetime.now(ZoneInfo("Europe/Paris"))
     il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
     il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
     date_actuelle = now_paris.strftime("%Y-%m-%d %H:%M:%S")
     
-    # 1. Transfert des anciens messages du tchat vers les archives
     cursor.execute("""
         INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage)
         SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?
@@ -182,7 +182,6 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # 2. Transfert des tâches terminées de plus de 14 jours
     cursor.execute("""
         INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
         SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
@@ -190,14 +189,12 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # 3. Nettoyage définitif des archives de PLUS de 6 mois
     cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     
     conn.commit()
     return True
 
-# Lancement du traitement d'archivage (géré par le cache)
 nettoyer_et_archiver_data()
 
 
@@ -211,7 +208,7 @@ if "navigation_page" not in st.session_state:
 
 
 # ==========================================================
-# 🚀 SYSTEME DE CONNEXION AUTOMATIQUE VIA LIEN (?qui=Prenom)
+# 🚀 CONNEXION AUTOMATIQUE VIA LIEN (?qui=Prenom)
 # ==========================================================
 if st.session_state.user is None:
     parametres_url = st.query_params
@@ -270,15 +267,16 @@ with st.sidebar:
         
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
-    # --- PANNEAU DE GESTION DES UTILISATEURS (EXCLUSIF ADMIN) ---
+    # --- PANNEAU DE GESTION (EXCLUSIF ADMIN) ---
     if st.session_state.role == "Administrateur":
         st.write("---")
         st.title("🛡️ Modération")
         
+        # OPTIMISATION : Une seule requête pour obtenir les membres de la sidebar au lieu de deux
+        cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
+        membres = cursor.fetchall()
+        
         with st.expander("👥 Liste des utilisateurs", expanded=False):
-            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
-            membres = cursor.fetchall()
-            
             if membres:
                 for m in membres:
                     nom_membre = m[0]
@@ -302,9 +300,8 @@ with st.sidebar:
             st.write("Lien pour **Christophe (Admin)** :")
             st.code(f"{base_url}/?qui=Christophe", language="text")
             
-            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
-            tous_les_users = cursor.fetchall()
-            for u in tous_les_users:
+            # Réutilisation directe des membres déjà chargés en mémoire
+            for u in membres:
                 st.write(f"Lien pour **{u[0]}** :")
                 st.code(f"{base_url}/?qui={u[0]}", language="text")
 
