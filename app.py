@@ -4,12 +4,12 @@ import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-# --- CONFIGURATION DE LA PAGE ---
+# Configuration de la page
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS POUR LE DESIGN & LE RESPONSIVE ---
+# Injection CSS pour Pc/Mobile et thème téléphone
 st.markdown("""
 <style>
 /* Gestion de l'affichage Desktop vs Mobile */
@@ -99,7 +99,7 @@ div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-of-type(3) 
 """, unsafe_allow_html=True)
 
 
-# --- CONNEXION BASE DE DONNÉES CLOUD (TURSO HTTP) ---
+# Connexion a la base de donnée cloud http Turso 
 DB_URL = st.secrets["DB_URL"].replace("libsql://", "https://")
 TOKEN = st.secrets["DB_TOKEN"]
 
@@ -168,7 +168,7 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION BASE DE DONNÉES ---
+# Innitialisation des données
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
@@ -190,7 +190,7 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
+# algorithme et nettoyage des données
 @st.cache_data(ttl=60)
 def nettoyer_et_archiver_data():
     try:
@@ -228,13 +228,13 @@ def nettoyer_et_archiver_data():
 
 nettoyer_et_archiver_data()
 
-# --- GESTION DES SESSIONS ---
+# Gestions des sessions 
 if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
 if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
 
-# --- CONNEXION AUTOMATIQUE VIA URL ---
+# Connexion automatique via URL
 parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
@@ -249,7 +249,7 @@ if st.session_state.user is None and "qui" in parametres_url:
         conn.commit()
         st.rerun()
 
-# --- ÉCRAN DE CONNEXION PRINCIPAL ---
+# Écran de connexion principale
 if st.session_state.user is None:
     st.title("📱 Hub Logistique & Entreprise")
     st.subheader("Veuillez vous identifier pour accéder aux outils.")
@@ -278,7 +278,7 @@ if st.session_state.user is None:
                 st.rerun()
     st.stop()
 
-# --- BARRE LATÉRALE ---
+# Barre lattéral
 with st.sidebar:
     st.success(f"👤 Connecté : {st.session_state.user} ({st.session_state.role})")
     if st.button("Se déconnecter", use_container_width=True):
@@ -325,14 +325,12 @@ with st.sidebar:
                 st.code(f"{base_url}/?qui={u[0]}", language="text")
 
 
-# ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE
-# ==========================================
+# Page 1 planning dynamique
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi synchronisé en temps réel. Cliquez sur la mission pour la lire en grand.")
 
-    # FENÊTRE DE FOCUS DE LA MISSION SELECTIONNÉE
+    # fenêtre de focus sur la mission donner
     if st.session_state.modal_mission:
         num_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
@@ -466,9 +464,7 @@ if page == "📋 Planning de l'équipe":
     afficher_tableau_taches()
 
 
-# ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ
-# ==========================================
+# Page 2 Tchat groupe et tchat privé en 1 pour 1
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
@@ -530,9 +526,7 @@ elif page == "💬 Zone Tchat":
             st.rerun()
 
 
-# ==========================================
-# 🗄️ PAGE 3 : ARCHIVES
-# ==========================================
+# Page 3 Archives de 6 mois
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
