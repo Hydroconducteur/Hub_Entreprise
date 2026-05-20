@@ -256,8 +256,8 @@ parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
     if prenom_detecte != "":
-        if prenom_detecte == "Christophe":
-            st.session_state.user = "Christophe"
+        if prenom_detecte in ["Christophe", "Chris"]:
+            st.session_state.user = prenom_detecte
             st.session_state.role = "Administrateur"
         else:
             st.session_state.user = prenom_detecte
@@ -269,7 +269,7 @@ if st.session_state.user is None and "qui" in parametres_url:
 
 
 # ==========================================================
-# 🔒 ÉCRAN DE CONNEXION PRINCIPAL (ÉVITE LE BUG SUR MOBILE)
+# 🔒 ÉCRAN DE CONNEXION PRINCIPAL (SÉCURISÉ)
 # ==========================================================
 if st.session_state.user is None:
     st.title("📱 Hub Logistique & Entreprise")
@@ -282,18 +282,23 @@ if st.session_state.user is None:
         if st.button("Se connecter au Hub 🚀", use_container_width=True):
             prenom_propre = identifiant.strip().capitalize()
             if prenom_propre != "":
-                if role_choisi == "Administrateur" and prenom_propre != "Christophe":
-                    st.error("❌ Accès Administrateur refusé. Seul Christophe possède ces droits.")
+                # PROTECTION FORCEE : Christophe et Chris sont TOUJOURS Administrateurs
+                if prenom_propre in ["Christophe", "Chris"]:
                     st.session_state.user = prenom_propre
-                    st.session_state.role = "Employé"
+                    st.session_state.role = "Administrateur"
                 else:
-                    st.session_state.user = prenom_propre
-                    st.session_state.role = role_choisi
+                    if role_choisi == "Administrateur":
+                        st.error("❌ Accès Administrateur refusé. Seul Christophe ou Chris possède ces droits.")
+                        st.session_state.user = prenom_propre
+                        st.session_state.role = "Employé"
+                    else:
+                        st.session_state.user = prenom_propre
+                        st.session_state.role = "Employé"
                 
                 cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
                 conn.commit()
                 st.rerun()
-    st.stop()  # Bloque le reste du chargement tant qu'on n'est pas authentifié
+    st.stop()
 
 
 # ==========================================================
@@ -322,7 +327,7 @@ with st.sidebar:
         st.write("---")
         st.title("🛡️ Gestion Système")
         
-        cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
+        cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom NOT IN ('Christophe', 'Chris') ORDER BY prenom ASC")
         membres = cursor.fetchall()
         
         with st.expander("👥 Membres enregistrés", expanded=False):
@@ -346,6 +351,9 @@ with st.sidebar:
             st.write("Lien **Christophe** :")
             st.code(f"{base_url}/?qui=Christophe", language="text")
             
+            st.write("Lien **Chris** :")
+            st.code(f"{base_url}/?qui=Chris", language="text")
+            
             for u in membres:
                 st.write(f"Lien **{u[0]}** :")
                 st.code(f"{base_url}/?qui={u[0]}", language="text")
@@ -360,7 +368,7 @@ if page == "📋 Planning de l'équipe":
 
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
-            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
+            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom NOT IN ('Christophe', 'Chris')")
             res_users = cursor.fetchall()
             liste_employes = [row[0] for row in res_users]
             
@@ -461,7 +469,7 @@ if page == "📋 Planning de l'équipe":
                     <div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟢 {statut}</div>
                 """, unsafe_allow_html=True)
                 
-            # Boutons interactifs (S'empilent parfaitement en bas sur mobile)
+            # Boutons d'action
             if statut == "En cours ⏳":
                 if st.session_state.user == qui or st.session_state.role == "Administrateur":
                     if col_act.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
@@ -503,8 +511,8 @@ elif page == "💬 Zone Tchat":
     cursor.execute("SELECT prenom FROM utilisateurs")
     res_users = cursor.fetchall()
     employes = [row[0] for row in res_users]
-    if "Christophe" not in employes:
-        employes.append("Christophe")
+    if "Christophe" not in employes: employes.append("Christophe")
+    if "Chris" not in employes: employes.append("Chris")
         
     options_tchat = ["📢 Canal #Général"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
     choix_tchat = st.selectbox("Discussion active :", options_tchat)
@@ -568,7 +576,7 @@ elif page == "💬 Zone Tchat":
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES ET HISTORIQUE RESPONSIVE
+# 🗄️ PAGE 3 : ARCHIVES (6 MOIS)
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
