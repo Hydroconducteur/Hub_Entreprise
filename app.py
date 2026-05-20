@@ -15,21 +15,49 @@ st.markdown("""
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* Alignement vertical strict au centre pour toutes les colonnes desktop */
-div[data-testid="stHorizontalBlock"] {
+/* --- ALIGNEMENT DESKTOP GLOBAL ULTRA-PRÉCIS --- */
+/* Cible uniquement les lignes de tableaux (Planning & Archives) et les en-têtes */
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]),
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]),
+div[data-testid="stHorizontalBlock"]:has(.header-mark) {
     align-items: center !important;
 }
 
-/* Force tous les blocs de texte à avoir la même hauteur et le même alignement que les boutons */
-.align-center-fix {
+/* Force chaque colonne à se comporter comme un bloc centré verticalement */
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) > div[data-testid="column"],
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) > div[data-testid="column"],
+div[data-testid="stHorizontalBlock"]:has(.header-mark) > div[data-testid="column"] {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 40px !important;
+}
+
+/* Élimine les décalages de marges internes de Streamlit pour le texte et les boutons */
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) .element-container,
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) .element-container,
+div[data-testid="stHorizontalBlock"]:has(.header-mark) .element-container {
+    margin: 0 !important;
+    padding: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    height: 38px !important;
+}
+
+/* Ajustement spécifique des blocs boutons pour qu'ils soient centrés sur l'axe */
+div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Annulation des marges de paragraphe pour aligner parfaitement le texte brut */
+div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
     margin: 0 !important;
     padding: 0 !important;
     text-align: center !important;
-    box-sizing: border-box !important;
 }
 
 /* Style épuré pour le bouton de la mission (style lien cliquable) */
@@ -52,7 +80,7 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         display: none !important;
     }
     
-    div[data-testid="stHorizontalBlock"] {
+    div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) {
         flex-direction: column !important;
         border: 1px solid rgba(128, 128, 128, 0.18) !important;
         border-radius: 16px !important;
@@ -61,6 +89,12 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         background-color: var(--secondary-background-color) !important;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
         gap: 10px !important;
+    }
+    
+    div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) > div[data-testid="column"] {
+        display: block !important;
+        min-height: auto !important;
+        width: 100% !important;
     }
     
     .mobile-field {
@@ -97,12 +131,6 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         font-size: 1.05em !important;
         font-weight: 800 !important;
         color: var(--primary-color) !important;
-    }
-    
-    .align-center-fix {
-        min-height: auto !important;
-        justify-content: flex-start !important;
-        height: auto !important;
     }
 }
 </style>
@@ -385,7 +413,6 @@ if page == "📋 Planning de l'équipe":
         taches = cursor.fetchall()
         
         if taches:
-            # Ratios optimisés pour laisser de la place aux boutons sans retour à la ligne
             if st.session_state.role == "Administrateur":
                 rep = [0.6, 1.2, 2.5, 1.8, 0.7, 2.4, 1.4, 0.6]
                 cols_h = st.columns(rep, vertical_alignment="center")
@@ -412,10 +439,10 @@ if page == "📋 Planning de l'équipe":
                 cols = st.columns(rep, vertical_alignment="center")
                 
                 with cols[0]:
-                    st.markdown(f'<div class="desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
                 
                 with cols[1]:
-                    st.markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
                 
                 # Système de troncation
                 limite_caracteres = 28
@@ -428,16 +455,16 @@ if page == "📋 Planning de l'équipe":
                         st.rerun()
 
                 with cols[3]:
-                    st.markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
                 
                 with cols[4]:
-                    st.markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with cols[5]:
                     color = "#eab308" if "En cours" in statut else "#22c55e"
                     emoji = "🟡" if "En cours" in statut else "🟢"
                     st.markdown(f"""
-                    <div class="desktop-text align-center-fix" style="font-weight: bold; color: {color};">{emoji} {statut}</div>
+                    <div class="desktop-text" style="font-weight: bold; color: {color}; text-align: center;">{emoji} {statut}</div>
                     <div class="mobile-text mobile-field" style="border-bottom: none !important;">
                         <span class="mobile-label">⚡ Statut</span>
                         <span class="mobile-value" style="color: {color}; font-weight: bold;">{emoji} {statut}</span>
@@ -453,7 +480,7 @@ if page == "📋 Planning de l'équipe":
                                 conn.commit()
                                 st.rerun()
                         else:
-                            st.markdown("<div class='desktop-text align-center-fix' style='color: gray;'>—</div>", unsafe_allow_html=True)
+                            st.markdown("<div class='desktop-text' style='color: gray; text-align: center;'>—</div>", unsafe_allow_html=True)
                     else:
                         if st.session_state.user == qui or st.session_state.role == "Administrateur":
                             if st.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
@@ -461,7 +488,7 @@ if page == "📋 Planning de l'équipe":
                                 conn.commit()
                                 st.rerun()
                         else:
-                            st.markdown("<div class='desktop-text align-center-fix' style='color: gray;'>—</div>", unsafe_allow_html=True)
+                            st.markdown("<div class='desktop-text' style='color: gray; text-align: center;'>—</div>", unsafe_allow_html=True)
                 
                 if st.session_state.role == "Administrateur":
                     with cols[7]:
@@ -591,8 +618,8 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                with c[0]: st.markdown(f'<div class="align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
-                with c[1]: st.markdown(f'<div class="align-center-fix">{qui}</div>', unsafe_allow_html=True)
+                with c[0]: st.markdown(f'<div><b>{num}</b></div>', unsafe_allow_html=True)
+                with c[1]: st.markdown(f'<div>{qui}</div>', unsafe_allow_html=True)
                 
                 with c[2]:
                     limite_caracteres = 25
@@ -601,10 +628,10 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
 
-                with c[3]: st.markdown(f'<div class="align-center-fix">{priorite}</div>', unsafe_allow_html=True)
-                with c[4]: st.markdown(f'<div class="align-center-fix">{temps}</div>', unsafe_allow_html=True)
-                with c[5]: st.markdown(f'<div class="align-center-fix">{statut}</div>', unsafe_allow_html=True)
-                with c[6]: st.markdown(f'<div class="align-center-fix"><i>{date_arch}</i></div>', unsafe_allow_html=True)
+                with c[3]: st.markdown(f'<div>{priorite}</div>', unsafe_allow_html=True)
+                with c[4]: st.markdown(f'<div>{temps}</div>', unsafe_allow_html=True)
+                with c[5]: st.markdown(f'<div style="font-weight: bold; text-align: center;">{statut}</div>', unsafe_allow_html=True)
+                with c[6]: st.markdown(f'<div><i>{date_arch}</i></div>', unsafe_allow_html=True)
                 
                 with c[7]:
                     if st.button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
