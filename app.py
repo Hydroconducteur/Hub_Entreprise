@@ -152,7 +152,7 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- NETTOYAGE & ARCHIVAGE AUTOMATIQUE CORRIGÉ ---
+# --- NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
 @st.cache_data(ttl=43200)
 def nettoyer_et_archiver_data():
     now_paris = datetime.now(ZoneInfo("Europe/Paris"))
@@ -160,7 +160,7 @@ def nettoyer_et_archiver_data():
     il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
     date_actuelle = now_paris.strftime("%Y-%m-%d %H:%M:%S")
     
-    # Archivage tchat
+    # Archivage automatique du tchat de plus de 14 jours
     cursor.execute("""
         INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage)
         SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?
@@ -168,7 +168,7 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # FIX ICI : Remplacement de 'Le %' par 'Fait le %'
+    # Déplacement physique des tâches terminées depuis plus de 14 jours
     cursor.execute("""
         INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
         SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
@@ -176,7 +176,7 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # Suppressions définitives automatiques après 6 mois
+    # Suppressions définitives après 6 mois
     cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     conn.commit()
@@ -444,7 +444,7 @@ elif page == "💬 Zone Tchat":
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES AVEC SUPPRESSION (6 MOIS)
+# 🗄️ PAGE 3 : ARCHIVES VISIBLES ET SUPPRIMABLES
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
@@ -452,13 +452,20 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
     onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
     
     with onglet_taches:
-        # Sélection de l'id pour pouvoir supprimer individuellement
-        cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage FROM planning_archive ORDER BY id DESC")
+        # REQUÊTE UNIFIÉE : On fusionne les tâches déplacées ET celles marquées "Fait" en cours pour tout voir en direct
+        cursor.execute("""
+            SELECT 'historique' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
+            FROM planning_archive
+            UNION ALL
+            SELECT 'recents' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, 'En attente de transfert' AS date_archivage 
+            FROM planning 
+            WHERE date_realisation LIKE 'Fait le %'
+            ORDER BY date_archivage DESC
+        """)
         taches_archived = cursor.fetchall()
         
         if taches_archived:
-            # Grille responsive et centrée avec intégration du bouton poubelle
-            rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.2, 0.8]
+            rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.4, 0.8]
             
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             cols_h[0].markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
@@ -473,7 +480,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             st.markdown('<hr style="margin: 10px 0; border-color: #cbd5e1;">', unsafe_allow_html=True)
             
             for ta in taches_archived:
-                id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
+                provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
                 c[0].markdown(f'<div class="align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
@@ -482,11 +489,14 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 c[3].markdown(f'<div class="align-center-fix">{priorite}</div>', unsafe_allow_html=True)
                 c[4].markdown(f'<div class="align-center-fix">{temps}</div>', unsafe_allow_html=True)
                 c[5].markdown(f'<div class="align-center-fix">{statut}</div>', unsafe_allow_html=True)
-                c[6].markdown(f'<div class="align-center-fix">{date_arch}</div>', unsafe_allow_html=True)
+                c[6].markdown(f'<div class="align-center-fix"><i>{date_arch}</i></div>', unsafe_allow_html=True)
                 
-                # Bouton de suppression définitive de l'archive
-                if c[7].button("🗑️", key=f"btn_del_arch_tache_{id_arch}", use_container_width=True):
-                    cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
+                # Bouton de suppression définitive aligné au poil
+                if c[7].button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
+                    if provenance == 'historique':
+                        cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
+                    else:
+                        cursor.execute("DELETE FROM planning WHERE id = ?", (id_arch,))
                     conn.commit()
                     st.rerun()
                     
@@ -507,7 +517,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                     with col_b_msg:
                         st.write(f"📢 **[{dest}]** *({date_brute})* **{exp}** : {txt}")
                     
-                    # Bouton de suppression définitive du message archivé
                     if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
                         cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
                         conn.commit()
