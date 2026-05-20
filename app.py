@@ -9,17 +9,25 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE DESIGN PREMIUM ---
+# --- INJECTION CSS RESPONSIVE & ALIGNEMENT PREMIUM ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
+/* Correction globale d'alignement vertical pour le tableau (Desktop) */
+div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
+    align-items: center !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(.header-mark) {
+    align-items: center !important;
+}
+
 .align-center-fix {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-height: 42px !important;
     margin-bottom: 0 !important;
 }
 
@@ -27,15 +35,17 @@ st.markdown("""
     margin-bottom: 0 !important;
 }
 
-/* Style personnalisé pour les boutons de mission style "lien/texte" */
+/* Style épuré pour le bouton de la mission (style lien cliquable) */
 div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
     text-align: left !important;
     justify-content: flex-start !important;
     border: 1px dashed rgba(128, 128, 128, 0.3) !important;
     background-color: transparent !important;
-    padding: 4px 8px !important;
+    padding: 6px 10px !important;
+    width: 100% !important;
 }
 
+/* Styles spécifiques pour l'affichage Mobile (Smartphones) */
 @media (max-width: 768px) {
     .mobile-text { display: block !important; }
     .desktop-text { display: none !important; }
@@ -338,9 +348,9 @@ with st.sidebar:
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi synchronisé en temps réel. Cliquez sur l'intitulé d'une mission pour la lire en grand.")
+    st.caption("Suivi synchronisé en temps réel. Cliquez sur la mission pour la lire en grand.")
 
-    # ZONE DE FOCUS (MODALE ACCESSIBLE)
+    # FENÊTRE DE FOCUS DE LA MISSION SELECTIONNÉE
     if st.session_state.modal_mission:
         num_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
@@ -384,10 +394,10 @@ if page == "📋 Planning de l'équipe":
         
         if taches:
             if st.session_state.role == "Administrateur":
-                rep = [0.7, 1.4, 2.8, 1.8, 0.8, 2.2, 1.1, 1.0]
+                rep = [0.6, 1.3, 2.8, 1.8, 0.8, 2.2, 1.1, 0.8]
                 cols_h = st.columns(rep, vertical_alignment="center")
             else:
-                rep = [0.7, 1.5, 3.2, 1.9, 0.9, 2.4, 1.1]
+                rep = [0.6, 1.4, 3.2, 1.9, 0.9, 2.4, 1.1]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
             cols_h[0].markdown("<div class='header-mark' style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
@@ -410,7 +420,7 @@ if page == "📋 Planning de l'équipe":
                 cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
                 cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
                 
-                # LOGIQUE DE TRONCATION ET ZOOM DE MISSION RE-STYLISE
+                # Système de troncation
                 limite_caracteres = 28
                 quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                 
@@ -423,9 +433,13 @@ if page == "📋 Planning de l'équipe":
                 cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
                 
                 if statut == "En cours ⏳":
-                    cols[5].markdown('<div class="desktop-text align-center-fix">🟡 <b>En cours</b></div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #eab308; font-weight: bold;">🟡 En cours</span></div>', unsafe_allow_html=True)
+                    cols[5].markdown('<div class="desktop-text align-center-fix"></div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #eab308; font-weight: bold;">🟡 En cours</span></div>', unsafe_allow_html=True)
+                    with cols[5]:
+                        st.markdown('<div class="desktop-text align-center-fix" style="font-weight: bold; color: #eab308;">🟡 En cours</div>', unsafe_allow_html=True)
                 else:
-                    cols[5].markdown(f'<div class="desktop-text align-center-fix">🟢 {statut}</div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #22c55e; font-weight: bold;">🟢 {statut}</span></div>', unsafe_allow_html=True)
+                    cols[5].markdown(f'<div class="desktop-text align-center-fix"></div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #22c55e; font-weight: bold;">🟢 {statut}</span></div>', unsafe_allow_html=True)
+                    with cols[5]:
+                        st.markdown(f'<div class="desktop-text align-center-fix" style="font-weight: bold; color: #22c55e;">🟢 {statut}</div>', unsafe_allow_html=True)
                     
                 if statut == "En cours ⏳":
                     if st.session_state.user == qui or st.session_state.role == "Administrateur":
@@ -497,7 +511,7 @@ elif page == "💬 Zone Tchat":
                         label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
                         st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
                     
-                    if cols_msg[1].button(icon_epingle := "📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver/supprimer", use_container_width=True):
+                    if cols_msg[1].button("📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver", use_container_width=True):
                         cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (0 if permanent == 1 else 1, id_msg))
                         conn.commit()
                         st.rerun()
@@ -528,7 +542,6 @@ elif page == "💬 Zone Tchat":
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
-    # ZONE DE FOCUS POUR LES ARCHIVES
     if st.session_state.modal_mission:
         num_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
@@ -557,8 +570,8 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
         if taches_archived:
             rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.4, 0.8]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
-            # En-têtes du tableau...
-            cols_h[0].markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
+            
+            cols_h[0].markdown("<div class='header-mark' style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
             cols_h[1].markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
             cols_h[2].markdown("<div style='text-align: center;'><b>Mission (cliquable)</b></div>", unsafe_allow_html=True)
             cols_h[3].markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
@@ -573,13 +586,12 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                c[0].markdown(f'<div class="align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
+                c[0].markdown(f'<div class="task-row-mark align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
                 c[1].markdown(f'<div class="align-center-fix">{qui}</div>', unsafe_allow_html=True)
                 
-                # Appliqué également aux archives tâches
                 limite_caracteres = 25
                 quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
-                if c[2].button(quoi_affiche_arch, key=f"mission_arch_btn_{provenance}_{id_arch}", use_container_width=True):
+                if c[2].button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
                     st.session_state.modal_mission = (num, qui, quoi)
                     st.rerun()
 
