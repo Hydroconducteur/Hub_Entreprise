@@ -3,12 +3,24 @@ import requests
 import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+import time  # Ajouté pour la gestion du rafraîchissement
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 # Adresse par défaut
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
+
+# ==========================================================
+# ⏱️ CONFIGURATION DU RAFRAÎCHISSEMENT AUTOMATIQUE
+# ==========================================================
+# Force l'application à se recharger toutes les 10 secondes pour synchroniser les écrans
+if "last_refresh" not in st.session_state:
+    st.session_state.last_refresh = time.time()
+
+# Ajout du composant de rafraîchissement (toutes les 10000 millisecondes = 10 secondes)
+st.fragment(run_every=10)(lambda: None)()
+
 
 # --- INJECTION CSS RESPONSIVE (DOUBLES INFRASTRUCTURES PC / MOBILE) ---
 st.markdown("""
@@ -282,7 +294,6 @@ if st.session_state.user is None:
         if st.button("Se connecter au Hub 🚀", use_container_width=True):
             prenom_propre = identifiant.strip().capitalize()
             if prenom_propre != "":
-                # PROTECTION FORCEE : Christophe et Chris sont TOUJOURS Administrateurs
                 if prenom_propre in ["Christophe", "Chris"]:
                     st.session_state.user = prenom_propre
                     st.session_state.role = "Administrateur"
@@ -322,7 +333,6 @@ with st.sidebar:
         
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
-    # --- PANNEAU DE MODÉRATION ADMIN ---
     if st.session_state.role == "Administrateur":
         st.write("---")
         st.title("🛡️ Gestion Système")
@@ -364,7 +374,7 @@ with st.sidebar:
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi en temps réel des tâches actives.")
+    st.caption("Suivi en temps réel des tâches actives (Actualisé toutes les 10s).")
 
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
@@ -402,7 +412,6 @@ if page == "📋 Planning de l'équipe":
     taches = cursor.fetchall()
     
     if taches:
-        # Configuration des colonnes Desktop
         if st.session_state.role == "Administrateur":
             repartition_colonnes = [0.7, 1.4, 2.8, 1.8, 0.8, 2.2, 1.1, 1.0]
             col_h_n, col_h_q, col_h_i, col_h_p, col_h_t, col_h_s, col_h_act, col_h_del = st.columns(repartition_colonnes, vertical_alignment="center")
@@ -410,7 +419,6 @@ if page == "📋 Planning de l'équipe":
             repartition_colonnes = [0.7, 1.5, 3.2, 1.9, 0.9, 2.4, 1.1]
             col_h_n, col_h_q, col_h_i, col_h_p, col_h_t, col_h_s, col_h_act = st.columns(repartition_colonnes, vertical_alignment="center")
         
-        # En-têtes (Cachés sur mobile via la classe .header-mark)
         col_h_n.markdown("<div class='header-mark' style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
         col_h_q.markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
         col_h_i.markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
@@ -432,7 +440,6 @@ if page == "📋 Planning de l'équipe":
             else:
                 col_n, col_q, col_i, col_p, col_t, col_s, col_act = st.columns(repartition_colonnes, vertical_alignment="center")
             
-            # --- AFFICHAGE HYBRIDE (PC CLASSIQUE / CARTE MOBILE) ---
             col_n.markdown(f"""
                 <div class="task-row-mark desktop-text" style="text-align: center;"><b>{num}</b></div>
                 <div class="mobile-text" style="font-size: 1.15em; color: #1e3a8a; margin-bottom: 4px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>
@@ -469,7 +476,6 @@ if page == "📋 Planning de l'équipe":
                     <div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟢 {statut}</div>
                 """, unsafe_allow_html=True)
                 
-            # Boutons d'action
             if statut == "En cours ⏳":
                 if st.session_state.user == qui or st.session_state.role == "Administrateur":
                     if col_act.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
