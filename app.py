@@ -9,13 +9,12 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE & ALIGNEMENT (OPTIMISÉ MOBILE & PC ISOLÉS) ---
+# --- INJECTION CSS RESPONSIVE DESIGN PREMIUM ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* FIX ALIGNEMENT VERTICAL BOUTONS VS TEXTE SUR PC */
 .align-center-fix {
     display: flex !important;
     align-items: center !important;
@@ -29,30 +28,60 @@ st.markdown("""
 }
 
 @media (max-width: 768px) {
-    .mobile-text { 
-        display: block !important; 
-        line-height: 1.5 !important;
-    }
+    .mobile-text { display: block !important; }
     .desktop-text { display: none !important; }
     
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         display: none !important;
     }
     
-    /* STYLE DES CARTES DE TACHES SUR MOBILE */
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
         flex-direction: column !important;
-        border: 1px solid rgba(128, 128, 128, 0.15) !important;
+        border: 1px solid rgba(128, 128, 128, 0.18) !important;
         border-radius: 16px !important;
         padding: 20px !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 22px !important;
         background-color: var(--secondary-background-color) !important;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
-        gap: 12px !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05) !important;
+        gap: 10px !important;
     }
     
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) + div hr {
         display: none !important;
+    }
+    
+    .mobile-field {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 0 !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.08) !important;
+    }
+    
+    .mobile-label {
+        font-size: 0.78em !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        opacity: 0.55 !important;
+        font-weight: 600 !important;
+    }
+    
+    .mobile-value {
+        font-size: 0.95em !important;
+        font-weight: 500 !important;
+        text-align: right !important;
+    }
+    
+    .mobile-header {
+        padding-bottom: 8px !important;
+        border-bottom: 2px solid var(--primary-color) !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .mobile-title {
+        font-size: 1.05em !important;
+        font-weight: 800 !important;
+        color: var(--primary-color) !important;
     }
     
     .stChatMessage {
@@ -138,17 +167,22 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION OPTIMISÉE ---
+# --- INITIALISATION BASE DE DONNÉES ---
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY)")
     cursor.execute("CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT)")
-    try:
-        cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
-    except sqlite3.OperationalError:
-        pass
+    cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
+    
+    # Sécurités d'ajouts de colonnes si tables déjà existantes
+    try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
+    except sqlite3.OperationalError: pass
+    try: cursor.execute("ALTER TABLE tchat ADD COLUMN garder_permanent INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
+    try: cursor.execute("ALTER TABLE tchat_archive ADD COLUMN garder_permanent INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
+    
     conn.commit()
 
 if "db_ready" not in st.session_state:
@@ -156,29 +190,42 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
-@st.cache_data(ttl=43200)
+# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE (TEMPS RÉEL HORAIRE) ---
+@st.cache_data(ttl=60) # Rafraîchi chaque minute pour être précis sur l'horaire 8h-20h
 def nettoyer_et_archiver_data():
     now_paris = datetime.now(ZoneInfo("Europe/Paris"))
+    heure_actuelle = now_paris.hour
+    date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 1. GESTION DU TCHAT : En dehors de 8h-20h, on bascule les messages en archive
+    if heure_actuelle >= 20 or heure_actuelle < 8:
+        # On copie tout le tchat actif vers l'archive
+        cursor.execute("""
+            INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage, garder_permanent)
+            SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?, garder_permanent FROM tchat
+        """, (date_actuelle_str,))
+        # On vide la zone de tchat actif pour le lendemain
+        cursor.execute("DELETE FROM tchat")
+        conn.commit()
+
+    # 2. GESTION DE LA PURGE DES ARCHIVES TCHAT (Suppression définitive après 2 semaines)
+    # Calcule la date limite (il y a 14 jours)
     il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-    il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
-    date_actuelle = now_paris.strftime("%Y-%m-%d %H:%M:%S")
     
-    cursor.execute("""
-        INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage)
-        SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?
-        FROM tchat WHERE date_creation_brute < ?
-    """, (date_actuelle, il_y_a_deux_semaines))
-    cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
+    # On supprime définitivement les messages de plus de 2 semaines UNIQUEMENT si garder_permanent = 0
+    cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
+    conn.commit()
     
+    # 3. GESTION DU PLANNING (Reste inchangé : archivage des tâches closes après 14 jours)
     cursor.execute("""
         INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
         SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
         FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?
-    """, (date_actuelle, il_y_a_deux_semaines))
+    """, (date_actuelle_str, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
+    # Sécurité globale 6 mois pour le planning historique
+    il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     conn.commit()
     return True
@@ -342,16 +389,16 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: var(--primary-color); margin-bottom: 6px; border-bottom: 2px solid rgba(128, 128, 128, 0.2); padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
-                cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
-                cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
-                cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text"><b>🚨 Urgence :</b> {priorite}</div>', unsafe_allow_html=True)
-                cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text"><b>⏱️ Temps :</b> {temps}</div>', unsafe_allow_html=True)
+                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
+                cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
+                cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text mobile-field" style="flex-direction: column !important; align-items: flex-start !important; gap: 4px !important;"><span class="mobile-label">📋 Mission</span><span class="mobile-value" style="text-align: left !important; width: 100% !important; font-weight: normal !important; padding-top: 2px;">{quoi}</span></div>', unsafe_allow_html=True)
+                cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
+                cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
                 
                 if statut == "En cours ⏳":
-                    cols[5].markdown('<div class="desktop-text align-center-fix">🟡 <b>En cours</b></div><div class="mobile-text"><b>⚡ Statut :</b> 🟡 En cours</div>', unsafe_allow_html=True)
+                    cols[5].markdown('<div class="desktop-text align-center-fix">🟡 <b>En cours</b></div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #eab308; font-weight: bold;">🟡 En cours</span></div>', unsafe_allow_html=True)
                 else:
-                    cols[5].markdown(f'<div class="desktop-text align-center-fix">🟢 {statut}</div><div class="mobile-text"><b>⚡ Statut :</b> 🟢 {statut}</div>', unsafe_allow_html=True)
+                    cols[5].markdown(f'<div class="desktop-text align-center-fix">🟢 {statut}</div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #22c55e; font-weight: bold;">🟢 {statut}</span></div>', unsafe_allow_html=True)
                     
                 if statut == "En cours ⏳":
                     if st.session_state.user == qui or st.session_state.role == "Administrateur":
@@ -385,10 +432,11 @@ if page == "📋 Planning de l'équipe":
 
 
 # ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ
+# PAGE 2 : LE TCHAT PRIVÉ + BOUTON ÉPINGLE
 # ==========================================
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
+    st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
     
     cursor.execute("SELECT prenom FROM utilisateurs")
     employes = [row[0] for row in cursor.fetchall()]
@@ -402,28 +450,42 @@ elif page == "💬 Zone Tchat":
     def afficher_flux_messages(cible_tchat):
         if cible_tchat == "📢 Canal #Général":
             st.subheader("📢 Fil d'actualité Général")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
+            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
         else:
             cible = cible_tchat.replace("🔒 Privé avec ", "")
             st.subheader(f"🔒 Bulle privée avec {cible}")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC", (st.session_state.user, cible, cible, st.session_state.user))
+            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC", (st.session_state.user, cible, cible, st.session_state.user))
         
         messages = cursor.fetchall()
         zone_msg = st.container(height=380)
         with zone_msg:
             if messages:
                 for m in messages:
-                    id_msg, exp, txt, date = m
+                    id_msg, exp, txt, date, permanent = m
+                    
+                    # Définition des boutons d'action à droite du message
+                    base_largeur = [8.5, 0.75, 0.75] if st.session_state.role == "Administrateur" else [9.2, 0.8]
+                    cols_msg = st.columns(base_largeur, vertical_alignment="center")
+                    
+                    with cols_msg[0]:
+                        label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
+                        st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
+                    
+                    # Bouton Épingle pour conserver indéfiniment
+                    icon_epingle = "📍" if permanent == 1 else "📌"
+                    tip_epingle = "Ne pas archiver/supprimer" if permanent == 0 else "Enlever la sauvegarde permanente"
+                    if cols_msg[1].button(icon_epingle, key=f"pin_live_{id_msg}", help=tip_epingle, use_container_width=True):
+                        nouvel_etat = 0 if permanent == 1 else 1
+                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (nouvel_etat, id_msg))
+                        conn.commit()
+                        st.rerun()
+                        
+                    # Bouton Supprimer pour l'admin
                     if st.session_state.role == "Administrateur":
-                        col_b_msg, col_b_del = st.columns([9.1, 0.9], vertical_alignment="center")
-                        with col_b_msg:
-                            st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}) : {txt}")
-                        if col_b_del.button("🗑️", key=f"del_{id_msg}", use_container_width=True):
+                        if cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
                             cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
                             conn.commit()
                             st.rerun()
-                    else:
-                        st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}) : {txt}")
             else:
                 st.caption("Aucun échange pour le moment.")
 
@@ -435,13 +497,13 @@ elif page == "💬 Zone Tchat":
         if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
             dest = "Tous" if choix_tchat == "📢 Canal #Général" else choix_tchat.replace("🔒 Privé avec ", "")
             now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-            cursor.execute("INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute) VALUES (?, ?, ?, ?, ?)", (st.session_state.user, dest, nouveau_msg.strip(), now_paris.strftime("%H:%M"), now_paris.strftime("%Y-%m-%d %H:%M:%S")))
+            cursor.execute("INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute, garder_permanent) VALUES (?, ?, ?, ?, ?, 0)", (st.session_state.user, dest, nouveau_msg.strip(), now_paris.strftime("%H:%M"), now_paris.strftime("%Y-%m-%d %H:%M:%S")))
             conn.commit()
             st.rerun()
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES VISIBLES ET SUPPRIMABLES
+# 🗄️ PAGE 3 : ARCHIVES (TCHAT AVEC REGLE DES 2 SEMAINES)
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
@@ -500,18 +562,30 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             st.info("Archives de tâches vides.")
             
     with onglet_messages:
-        cursor.execute("SELECT id, expediteur, destinataire, texte, date_creation_brute FROM tchat_archive ORDER BY id DESC")
+        st.caption("⚠️ Les messages classiques s'effacent automatiquement après 14 jours. Ceux avec l'épingle 📌 restent indéfiniment.")
+        cursor.execute("SELECT id, expediteur, destinataire, texte, date_creation_brute, garder_permanent FROM tchat_archive ORDER BY id DESC")
         messages_archived = cursor.fetchall()
         
         if messages_archived:
             with st.container(height=400):
                 for ma in messages_archived:
-                    id_msg_arch, exp, dest, txt, date_brute = ma
-                    col_b_msg, col_b_del = st.columns([9.1, 0.9], vertical_alignment="center")
+                    id_msg_arch, exp, dest, txt, date_brute, permanent_arch = ma
+                    col_b_msg, col_b_pin, col_b_del = st.columns([8.4, 0.8, 0.8], vertical_alignment="center")
                     
                     with col_b_msg:
-                        st.write(f"📢 **[{dest}]** *({date_brute})* **{exp}** : {txt}")
+                        label_perm_arch = " 📌 [SAUVEGARDÉ INDÉFINIMENT]" if permanent_arch == 1 else ""
+                        st.write(f"📢 **[{dest}]** *({date_brute})*{label_perm_arch} **{exp}** : {txt}")
                     
+                    # Bouton Épingle depuis la zone d'archive
+                    icon_epingle_arch = "📍" if permanent_arch == 1 else "📌"
+                    if col_b_pin.button(icon_epingle_arch, key=f"pin_arch_{id_msg_arch}", use_container_width=True):
+                        nouvel_etat_arch = 0 if permanent_arch == 1 else 1
+                        cursor.execute("UPDATE tchat_archive WHERE id = ?", (id_msg_arch,))
+                        cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (nouvel_etat_arch, id_msg_arch))
+                        conn.commit()
+                        st.rerun()
+                        
+                    # Bouton suppression définitive manuelle
                     if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
                         cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
                         conn.commit()
