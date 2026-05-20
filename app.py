@@ -15,63 +15,54 @@ st.markdown("""
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* --- ALIGNEMENT DESKTOP GLOBAL ULTRA-PRÉCIS --- */
-/* Cible uniquement les lignes de tableaux (Planning & Archives) et les en-têtes */
+/* --- ALIGNEMENT DESKTOP GLOBAL UNIFIÉ --- */
+/* 1. On force l'alignement centré sur le conteneur parent de la ligne */
 div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]),
 div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]),
 div[data-testid="stHorizontalBlock"]:has(.header-mark) {
     align-items: center !important;
 }
 
-/* Force chaque colonne à se comporter comme un bloc centré verticalement */
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) > div[data-testid="column"],
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) > div[data-testid="column"],
-div[data-testid="stHorizontalBlock"]:has(.header-mark) > div[data-testid="column"] {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    min-height: 40px !important;
-}
-
-/* Élimine les décalages de marges internes de Streamlit pour le texte et les boutons */
+/* 2. Suppression radicale des marges de blocs Streamlit pour éviter les décalages */
 div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) .element-container,
 div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) .element-container,
 div[data-testid="stHorizontalBlock"]:has(.header-mark) .element-container {
     margin: 0 !important;
     padding: 0 !important;
-    display: flex !important;
+}
+
+/* 3. HARMONISATION DE TOUS LES BOUTONS (Mission, Actions, Suppr) */
+/* On leur donne tous la même hauteur stricte (38px) et on centre leur contenu */
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) button,
+div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) button {
+    height: 38px !important;
+    margin: 0 !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
 }
 
-/* Ajustement spécifique des blocs boutons pour qu'ils soient centrés sur l'axe */
-div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Annulation des marges de paragraphe pour aligner parfaitement le texte brut */
-div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
-    margin: 0 !important;
-    padding: 0 !important;
-    text-align: center !important;
-}
-
-/* Style épuré pour le bouton de la mission (style lien cliquable) */
-div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
+/* Ajustement visuel spécifique pour le bouton de la mission (aligné à gauche, style encadré) */
+div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"],
+div[data-testid="stHorizontalBlock"] button[key^="mission_btn_arch_"] {
     text-align: left !important;
     justify-content: flex-start !important;
     border: 1px dashed rgba(128, 128, 128, 0.3) !important;
     background-color: transparent !important;
     padding: 6px 10px !important;
     width: 100% !important;
-    height: 38px !important;
 }
 
-/* Styles spécifiques pour l'affichage Mobile (Smartphones) */
+/* 4. HARMONISATION DES TEXTES ET STATUTS */
+/* On force le texte brut et le Statut à s'aligner sur la même hauteur de ligne (38px) */
+div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 38px !important;
+    text-align: center !important;
+}
+
+/* --- AFFICHAGE MOBILE --- */
 @media (max-width: 768px) {
     .mobile-text { display: block !important; }
     .desktop-text { display: none !important; }
