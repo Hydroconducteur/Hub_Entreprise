@@ -7,11 +7,10 @@ from zoneinfo import ZoneInfo
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
-# Adresse par défault
+# Adresse par défaut
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
 # --- CONNEXION BASE DE DONNÉES CLOUD (TURSO HTTP) ---
-# Nettoyage de l'URL pour assurer le format https:// attendu par l'API REST
 DB_URL = st.secrets["DB_URL"].replace("libsql://", "https://")
 TOKEN = st.secrets["DB_TOKEN"]
 
@@ -25,7 +24,6 @@ class TursoAdapter:
             "Content-Type": "application/json"
         }
         
-        # Formatage strict exigé par l'API de Turso
         args = []
         for p in params:
             if isinstance(p, int):
@@ -58,12 +56,10 @@ class TursoAdapter:
             
         first_result = results[0]
         
-        # Si la requête SQL est invalide (ex: la colonne existe déjà lors du ALTER TABLE)
         if first_result.get("type") == "error":
             error_msg = first_result.get("error", {}).get("message", "Erreur SQL inconnue")
             raise sqlite3.OperationalError(error_msg)
             
-        # Reconstitution des résultats exactement comme sqlite3 le ferait
         raw_rows = first_result.get("response", {}).get("result", {}).get("rows", [])
         parsed_rows = []
         for raw_row in raw_rows:
@@ -99,71 +95,79 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# Création des tables actives si elles n'existent pas
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS planning (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    num_tache TEXT,
-    assigne_a TEXT,
-    intitule TEXT,
-    temps_estime TEXT,
-    date_realisation TEXT,
-    date_creation_brute TEXT,
-    priorite TEXT
-)""")
+# --- INITIALISATION DE LA BASE (OPTIMISÉE : S'EXÉCUTE 1 SEULE FOIS AU DÉMARRAGE) ---
+@st.cache_resource
+def initialiser_structure_base():
+    # Création des tables actives si elles n'existent pas
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS planning (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        num_tache TEXT,
+        assigne_a TEXT,
+        intitule TEXT,
+        temps_estime TEXT,
+        date_realisation TEXT,
+        date_creation_brute TEXT,
+        priorite TEXT
+    )""")
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS tchat (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    expediteur TEXT,
-    destinataire TEXT,
-    texte TEXT,
-    date_envoi TEXT,
-    date_creation_brute TEXT
-)""")
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tchat (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        expediteur TEXT,
+        destinataire TEXT,
+        texte TEXT,
+        date_envoi TEXT,
+        date_creation_brute TEXT
+    )""")
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS utilisateurs (
-    prenom TEXT PRIMARY KEY
-)""")
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS utilisateurs (
+        prenom TEXT PRIMARY KEY
+    )""")
 
-# Création des tables d'ARCHIVES
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS planning_archive (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    num_tache TEXT,
-    assigne_a TEXT,
-    intitule TEXT,
-    temps_estime TEXT,
-    date_realisation TEXT,
-    date_creation_brute TEXT,
-    priorite TEXT,
-    date_archivage TEXT
-)""")
+    # Création des tables d'ARCHIVES
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS planning_archive (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        num_tache TEXT,
+        assigne_a TEXT,
+        intitule TEXT,
+        temps_estime TEXT,
+        date_realisation TEXT,
+        date_creation_brute TEXT,
+        priorite TEXT,
+        date_archivage TEXT
+    )""")
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS tchat_archive (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    expediteur TEXT,
-    destinataire TEXT,
-    texte TEXT,
-    date_envoi TEXT,
-    date_creation_brute TEXT,
-    date_archivage TEXT
-)""")
-conn.commit()
-
-# --- MIGRATION DE SÉCURITÉ ---
-try:
-    cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tchat_archive (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        expediteur TEXT,
+        destinataire TEXT,
+        texte TEXT,
+        date_envoi TEXT,
+        date_creation_brute TEXT,
+        date_archivage TEXT
+    )""")
+    
+    # Migration de sécurité
+    try:
+        cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
+    except sqlite3.OperationalError:
+        pass
+        
     conn.commit()
-except sqlite3.OperationalError:
-    pass
+    return True
+
+# Lancement unique de la configuration de la base
+initialiser_structure_base()
 
 
 # =========================================================================
-# 🧹 SYSTEME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE (14 JOURS -> HISTORIQUE 6 MOIS)
+# 🧹 SYSTEME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE (OPTIMISÉ : 1 FOIS TOUTES LES 12H)
 # =========================================================================
+@st.cache_data(ttl=43200) # 43200 secondes = 12 heures
 def nettoyer_et_archiver_data():
     now_paris = datetime.now(ZoneInfo("Europe/Paris"))
     il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
@@ -191,7 +195,9 @@ def nettoyer_et_archiver_data():
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     
     conn.commit()
+    return True
 
+# Lancement du traitement d'archivage (géré par le cache)
 nettoyer_et_archiver_data()
 
 
