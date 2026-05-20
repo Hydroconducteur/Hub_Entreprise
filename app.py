@@ -9,13 +9,13 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE & ALIGNEMENT (COMPATIBLE DARK MODE) ---
+# --- INJECTION CSS RESPONSIVE & ALIGNEMENT (OPTIMISÉ MOBILE & PC ISOLES) ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* FIX ALIGNEMENT VERTICAL BOUTONS VS TEXTE */
+/* FIX ALIGNEMENT VERTICAL BOUTONS VS TEXTE SUR PC */
 .align-center-fix {
     display: flex !important;
     align-items: center !important;
@@ -29,23 +29,26 @@ st.markdown("""
 }
 
 @media (max-width: 768px) {
-    .mobile-text { display: block !important; }
+    .mobile-text { 
+        display: block !important; 
+        line-height: 1.5 !important; /* Améliore la lisibilité des textes */
+    }
     .desktop-text { display: none !important; }
     
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         display: none !important;
     }
     
+    /* STYLE DES CARTES DE TACHES SUR MOBILE */
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
         flex-direction: column !important;
-        border: 1px solid rgba(128, 128, 128, 0.2) !important;
-        border-radius: 12px !important;
-        padding: 16px !important;
-        margin-bottom: 14px !important;
-        /* S'adapte automatiquement au thème sombre ou clair de l'appareil */
+        border: 1px solid rgba(128, 128, 128, 0.15) !important;
+        border-radius: 16px !important; /* Coins plus doux */
+        padding: 20px !important; /* Plus d'espace respirable à l'intérieur */
+        margin-bottom: 20px !important; /* Espace net entre chaque carte de tâche */
         background-color: var(--secondary-background-color) !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-        gap: 8px !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important; /* Ombre plus subtile */
+        gap: 12px !important; /* Espace parfait et harmonieux entre chaque ligne d'info */
     }
     
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) + div hr {
@@ -53,8 +56,8 @@ st.markdown("""
     }
     
     .stChatMessage {
-        padding: 10px !important;
-        margin-bottom: 8px !important;
+        padding: 12px !important;
+        margin-bottom: 10px !important;
     }
     
     .align-center-fix {
@@ -342,17 +345,16 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                # Correction couleur titre tâche mobile (dynamique selon le thème)
-                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: var(--primary-color); margin-bottom: 4px; border-bottom: 2px solid rgba(128, 128, 128, 0.2); padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
+                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: var(--primary-color); margin-bottom: 6px; border-bottom: 2px solid rgba(128, 128, 128, 0.2); padding-bottom: 6px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
                 cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
                 cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
                 cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text"><b>🚨 Urgence :</b> {priorite}</div>', unsafe_allow_html=True)
                 cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text"><b>⏱️ Temps :</b> {temps}</div>', unsafe_allow_html=True)
                 
                 if statut == "En cours ⏳":
-                    cols[5].markdown('<div class="desktop-text align-center-fix">🟡 <b>En cours</b></div><div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟡 En cours</div>', unsafe_allow_html=True)
+                    cols[5].markdown('<div class="desktop-text align-center-fix">🟡 <b>En cours</b></div><div class="mobile-text"><b>⚡ Statut :</b> 🟡 En cours</div>', unsafe_allow_html=True)
                 else:
-                    cols[5].markdown(f'<div class="desktop-text align-center-fix">🟢 {statut}</div><div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟢 {statut}</div>', unsafe_allow_html=True)
+                    cols[5].markdown(f'<div class="desktop-text align-center-fix">🟢 {statut}</div><div class="mobile-text"><b>⚡ Statut :</b> 🟢 {statut}</div>', unsafe_allow_html=True)
                     
                 if statut == "En cours ⏳":
                     if st.session_state.user == qui or st.session_state.role == "Administrateur":
