@@ -9,7 +9,7 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE & ALIGNEMENT ---
+# --- INJECTION CSS RESPONSIVE & ALIGNEMENT (COMPATIBLE DARK MODE) ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
@@ -20,7 +20,7 @@ st.markdown("""
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    min-height: 42px !important; /* Hauteur standard d'un bouton Streamlit */
+    min-height: 42px !important;
     margin-bottom: 0 !important;
 }
 
@@ -38,12 +38,13 @@ st.markdown("""
     
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
         flex-direction: column !important;
-        border: 1px solid #e2e8f0 !important;
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
         border-radius: 12px !important;
         padding: 16px !important;
         margin-bottom: 14px !important;
-        background-color: #ffffff !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+        /* S'adapte automatiquement au thème sombre ou clair de l'appareil */
+        background-color: var(--secondary-background-color) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
         gap: 8px !important;
     }
     
@@ -160,7 +161,6 @@ def nettoyer_et_archiver_data():
     il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
     date_actuelle = now_paris.strftime("%Y-%m-%d %H:%M:%S")
     
-    # Archivage automatique du tchat de plus de 14 jours
     cursor.execute("""
         INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage)
         SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?
@@ -168,7 +168,6 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # Déplacement physique des tâches terminées depuis plus de 14 jours
     cursor.execute("""
         INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
         SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
@@ -176,7 +175,6 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     
-    # Suppressions définitives après 6 mois
     cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     conn.commit()
@@ -344,7 +342,8 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: #1e3a8a; margin-bottom: 4px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
+                # Correction couleur titre tâche mobile (dynamique selon le thème)
+                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: var(--primary-color); margin-bottom: 4px; border-bottom: 2px solid rgba(128, 128, 128, 0.2); padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
                 cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
                 cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
                 cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text"><b>🚨 Urgence :</b> {priorite}</div>', unsafe_allow_html=True)
@@ -452,7 +451,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
     onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
     
     with onglet_taches:
-        # REQUÊTE UNIFIÉE : On fusionne les tâches déplacées ET celles marquées "Fait" en cours pour tout voir en direct
         cursor.execute("""
             SELECT 'historique' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
             FROM planning_archive
@@ -491,7 +489,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 c[5].markdown(f'<div class="align-center-fix">{statut}</div>', unsafe_allow_html=True)
                 c[6].markdown(f'<div class="align-center-fix"><i>{date_arch}</i></div>', unsafe_allow_html=True)
                 
-                # Bouton de suppression définitive aligné au poil
                 if c[7].button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
                     if provenance == 'historique':
                         cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
