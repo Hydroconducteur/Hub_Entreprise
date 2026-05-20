@@ -9,11 +9,24 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE ---
+# --- INJECTION CSS RESPONSIVE & ALIGNEMENT ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
 .desktop-text { display: block; }
+
+/* FIX ALIGNEMENT VERTICAL BOUTONS VS TEXTE */
+.align-center-fix {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 42px !important; /* Hauteur standard d'un bouton Streamlit */
+    margin-bottom: 0 !important;
+}
+
+.align-center-fix p {
+    margin-bottom: 0 !important;
+}
 
 @media (max-width: 768px) {
     .mobile-text { display: block !important; }
@@ -41,6 +54,11 @@ st.markdown("""
     .stChatMessage {
         padding: 10px !important;
         margin-bottom: 8px !important;
+    }
+    
+    .align-center-fix {
+        min-height: auto !important;
+        justify-content: flex-start !important;
     }
 }
 </style>
@@ -247,7 +265,6 @@ with st.sidebar:
             else:
                 st.caption("Aucun employé connecté.")
 
-        # 🔗 RESTAURÉ : LIENS MAGIQUES DE CONNEXION DIRECTE
         with st.expander("🔗 Liens d'accès direct", expanded=False):
             st.caption("Liens magiques de connexion automatique :")
             base_url = VOTRE_LIEN_ACTUEL
@@ -324,16 +341,17 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                cols[0].markdown(f'<div class="task-row-mark desktop-text" style="text-align: center;"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: #1e3a8a; margin-bottom: 4px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
-                cols[1].markdown(f'<div class="desktop-text" style="text-align: center;">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
-                cols[2].markdown(f'<div class="desktop-text" style="text-align: center;">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
-                cols[3].markdown(f'<div class="desktop-text" style="text-align: center;">{priorite}</div><div class="mobile-text"><b>🚨 Urgence :</b> {priorite}</div>', unsafe_allow_html=True)
-                cols[4].markdown(f'<div class="desktop-text" style="text-align: center;">{temps}</div><div class="mobile-text"><b>⏱️ Temps :</b> {temps}</div>', unsafe_allow_html=True)
+                # Ajout de la classe "align-center-fix" sur tous les éléments de la ligne
+                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: #1e3a8a; margin-bottom: 4px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
+                cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
+                cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
+                cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text"><b>🚨 Urgence :</b> {priorite}</div>', unsafe_allow_html=True)
+                cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text"><b>⏱️ Temps :</b> {temps}</div>', unsafe_allow_html=True)
                 
                 if statut == "En cours ⏳":
-                    cols[5].markdown('<div class="desktop-text" style="text-align: center;">🟡 <b>En cours</b></div><div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟡 En cours</div>', unsafe_allow_html=True)
+                    cols[5].markdown('<div class="desktop-text align-center-fix">🟡 <b>En cours</b></div><div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟡 En cours</div>', unsafe_allow_html=True)
                 else:
-                    cols[5].markdown(f'<div class="desktop-text" style="text-align: center;">🟢 {statut}</div><div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟢 {statut}</div>', unsafe_allow_html=True)
+                    cols[5].markdown(f'<div class="desktop-text align-center-fix">🟢 {statut}</div><div class="mobile-text" style="margin-bottom: 6px;"><b>⚡ Statut :</b> 🟢 {statut}</div>', unsafe_allow_html=True)
                     
                 if statut == "En cours ⏳":
                     if st.session_state.user == qui or st.session_state.role == "Administrateur":
@@ -343,7 +361,7 @@ if page == "📋 Planning de l'équipe":
                             conn.commit()
                             st.rerun()
                     else:
-                        cols[6].markdown("<div class='desktop-text' style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
+                        cols[6].markdown("<div class='desktop-text align-center-fix' style='color: gray;'>—</div>", unsafe_allow_html=True)
                 else:
                     if st.session_state.user == qui or st.session_state.role == "Administrateur":
                         if cols[6].button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
@@ -351,7 +369,7 @@ if page == "📋 Planning de l'équipe":
                             conn.commit()
                             st.rerun()
                     else:
-                        cols[6].markdown("<div class='desktop-text' style='text-align: center; color: gray;'>—</div>", unsafe_allow_html=True)
+                        cols[6].markdown("<div class='desktop-text align-center-fix' style='color: gray;'>—</div>", unsafe_allow_html=True)
                 
                 if st.session_state.role == "Administrateur":
                     if cols[7].button("🗑️", key=f"btn_del_tache_{id_t}", use_container_width=True):
