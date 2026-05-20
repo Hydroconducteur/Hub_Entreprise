@@ -3,7 +3,7 @@ import requests
 import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-import time  # Ajouté pour la gestion du rafraîchissement
+import time
 
 # --- CONFIGURATION DE LA PAGE ---
 st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
@@ -14,34 +14,27 @@ VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 # ==========================================================
 # ⏱️ CONFIGURATION DU RAFRAÎCHISSEMENT AUTOMATIQUE
 # ==========================================================
-# Force l'application à se recharger toutes les 10 secondes pour synchroniser les écrans
 if "last_refresh" not in st.session_state:
     st.session_state.last_refresh = time.time()
 
-# Ajout du composant de rafraîchissement (toutes les 10000 millisecondes = 10 secondes)
+# L'écran se synchronise automatiquement toutes les 10 secondes
 st.fragment(run_every=10)(lambda: None)()
 
 
-# --- INJECTION CSS RESPONSIVE (DOUBLES INFRASTRUCTURES PC / MOBILE) ---
+# --- INJECTION CSS RESPONSIVE ---
 st.markdown("""
 <style>
-/* Style des textes conditionnels */
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* =========================================================================
-   📱 STYLES EXCLUSIFS POUR ÉCRANS MOBILES (Smartphone / Tablette verticale)
-   ========================================================================= */
 @media (max-width: 768px) {
     .mobile-text { display: block !important; }
     .desktop-text { display: none !important; }
     
-    /* Masquer l'en-tête global du tableau sur mobile */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         display: none !important;
     }
     
-    /* Métamorphose de chaque ligne du tableau en une carte épurée */
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
         flex-direction: column !important;
         border: 1px solid #e2e8f0 !important;
@@ -53,12 +46,10 @@ st.markdown("""
         gap: 8px !important;
     }
     
-    /* Masquer les lignes de séparation <hr> d'origine devenues superflues */
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) + div hr {
         display: none !important;
     }
     
-    /* Ajustements esthétiques pour le tchat sur mobile */
     .stChatMessage {
         padding: 10px !important;
         margin-bottom: 8px !important;
@@ -156,8 +147,7 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION DE LA BASE ---
-@st.cache_resource
+# --- INITIALISATION DE LA BASE (CORRIGÉ : PLUS DE CACHE BLOQUANT) ---
 def initialiser_structure_base():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS planning (
@@ -216,7 +206,6 @@ def initialiser_structure_base():
         pass
         
     conn.commit()
-    return True
 
 initialiser_structure_base()
 
@@ -261,9 +250,7 @@ if "navigation_page" not in st.session_state:
     st.session_state.navigation_page = "📋 Planning de l'équipe"
 
 
-# ==========================================================
-# 🚀 CONNEXION AUTOMATIQUE VIA LIEN (?qui=Prenom)
-# ==========================================================
+# --- CONNEXION AUTOMATIQUE ---
 parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
@@ -280,9 +267,7 @@ if st.session_state.user is None and "qui" in parametres_url:
         st.rerun()
 
 
-# ==========================================================
-# 🔒 ÉCRAN DE CONNEXION PRINCIPAL (SÉCURISÉ)
-# ==========================================================
+# --- ÉCRAN DE CONNEXION PRINCIPAL ---
 if st.session_state.user is None:
     st.title("📱 Hub Logistique & Entreprise")
     st.subheader("Veuillez vous identifier pour accéder aux outils.")
@@ -312,9 +297,7 @@ if st.session_state.user is None:
     st.stop()
 
 
-# ==========================================================
-# 🗺️ BARRE LATÉRALE DE NAVIGATION (APPARAÎT APRÈS CONNEXION)
-# ==========================================================
+# --- BARRE LATÉRALE ---
 with st.sidebar:
     st.success(f"👤 Connecté : {st.session_state.user} ({st.session_state.role})")
     if st.button("Se déconnecter", use_container_width=True):
@@ -374,7 +357,7 @@ with st.sidebar:
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi en temps réel des tâches actives (Actualisé toutes les 10s).")
+    st.caption("Suivi en temps réel des tâches actives (Actualisé en direct ⏱️).")
 
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
