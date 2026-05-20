@@ -9,7 +9,7 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE & ALIGNEMENT (OPTIMISÉ MOBILE & PC ISOLES) ---
+# --- INJECTION CSS RESPONSIVE & ALIGNEMENT (OPTIMISÉ MOBILE & PC ISOLÉS) ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
@@ -31,7 +31,7 @@ st.markdown("""
 @media (max-width: 768px) {
     .mobile-text { 
         display: block !important; 
-        line-height: 1.5 !important; /* Améliore la lisibilité des textes */
+        line-height: 1.5 !important;
     }
     .desktop-text { display: none !important; }
     
@@ -43,12 +43,12 @@ st.markdown("""
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
         flex-direction: column !important;
         border: 1px solid rgba(128, 128, 128, 0.15) !important;
-        border-radius: 16px !important; /* Coins plus doux */
-        padding: 20px !important; /* Plus d'espace respirable à l'intérieur */
-        margin-bottom: 20px !important; /* Espace net entre chaque carte de tâche */
+        border-radius: 16px !important;
+        padding: 20px !important;
+        margin-bottom: 20px !important;
         background-color: var(--secondary-background-color) !important;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important; /* Ombre plus subtile */
-        gap: 12px !important; /* Espace parfait et harmonieux entre chaque ligne d'info */
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
+        gap: 12px !important;
     }
     
     div[data-testid="stHorizontalBlock"]:has(.task-row-mark) + div hr {
@@ -195,7 +195,7 @@ parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
     if prenom_detecte != "":
-        if prenom_detecte in ["Christophe", "Chris"]:
+        if prenom_detecte == "Christophe":
             st.session_state.user = prenom_detecte
             st.session_state.role = "Administrateur"
         else:
@@ -217,7 +217,7 @@ if st.session_state.user is None:
         if st.button("Se connecter au Hub 🚀", use_container_width=True):
             prenom_propre = identifiant.strip().capitalize()
             if prenom_propre != "":
-                if prenom_propre in ["Christophe", "Chris"]:
+                if prenom_propre == "Christophe":
                     st.session_state.user = prenom_propre
                     st.session_state.role = "Administrateur"
                 else:
@@ -253,7 +253,7 @@ with st.sidebar:
     if st.session_state.role == "Administrateur":
         st.write("---")
         st.title("🛡️ Gestion Système")
-        cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom NOT IN ('Christophe', 'Chris') ORDER BY prenom ASC")
+        cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
         membres = cursor.fetchall()
         
         with st.expander("👥 Membres enregistrés", expanded=False):
@@ -276,9 +276,6 @@ with st.sidebar:
             st.write("Lien **Christophe** :")
             st.code(f"{base_url}/?qui=Christophe", language="text")
             
-            st.write("Lien **Chris** :")
-            st.code(f"{base_url}/?qui=Chris", language="text")
-            
             for u in membres:
                 st.write(f"Lien **{u[0]}** :")
                 st.code(f"{base_url}/?qui={u[0]}", language="text")
@@ -293,7 +290,7 @@ if page == "📋 Planning de l'équipe":
 
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
-            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom NOT IN ('Christophe', 'Chris')")
+            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
             liste_employes = [row[0] for row in cursor.fetchall()]
             
             with st.form("form_tache"):
@@ -345,7 +342,7 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: var(--primary-color); margin-bottom: 6px; border-bottom: 2px solid rgba(128, 128, 128, 0.2); padding-bottom: 6px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
+                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: var(--primary-color); margin-bottom: 6px; border-bottom: 2px solid rgba(128, 128, 128, 0.2); padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
                 cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
                 cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
                 cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text"><b>🚨 Urgence :</b> {priorite}</div>', unsafe_allow_html=True)
@@ -396,7 +393,6 @@ elif page == "💬 Zone Tchat":
     cursor.execute("SELECT prenom FROM utilisateurs")
     employes = [row[0] for row in cursor.fetchall()]
     if "Christophe" not in employes: employes.append("Christophe")
-    if "Chris" not in employes: employes.append("Chris")
         
     options_tchat = ["📢 Canal #Général"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
     choix_tchat = st.selectbox("Discussion active :", options_tchat)
