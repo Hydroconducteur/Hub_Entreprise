@@ -9,30 +9,27 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE & ALIGNEMENT PREMIUM ---
+# --- INJECTION CSS RESPONSIVE & ALIGNEMENT HORIZONTAL PARFAIT ---
 st.markdown("""
 <style>
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* Correction globale d'alignement vertical pour le tableau (Desktop) */
-div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
+/* Alignement vertical strict au centre pour toutes les colonnes desktop */
+div[data-testid="stHorizontalBlock"] {
     align-items: center !important;
 }
 
-div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-    align-items: center !important;
-}
-
+/* Force tous les blocs de texte à avoir la même hauteur et le même alignement que les boutons */
 .align-center-fix {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    margin-bottom: 0 !important;
-}
-
-.align-center-fix p {
-    margin-bottom: 0 !important;
+    height: 38px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
 }
 
 /* Style épuré pour le bouton de la mission (style lien cliquable) */
@@ -43,6 +40,7 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
     background-color: transparent !important;
     padding: 6px 10px !important;
     width: 100% !important;
+    height: 38px !important;
 }
 
 /* Styles spécifiques pour l'affichage Mobile (Smartphones) */
@@ -54,7 +52,7 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         display: none !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(.task-row-mark) {
+    div[data-testid="stHorizontalBlock"] {
         flex-direction: column !important;
         border: 1px solid rgba(128, 128, 128, 0.18) !important;
         border-radius: 16px !important;
@@ -65,16 +63,13 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         gap: 10px !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(.task-row-mark) + div hr {
-        display: none !important;
-    }
-    
     .mobile-field {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
         padding: 8px 0 !important;
         border-bottom: 1px solid rgba(128, 128, 128, 0.08) !important;
+        width: 100% !important;
     }
     
     .mobile-label {
@@ -95,6 +90,7 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         padding-bottom: 8px !important;
         border-bottom: 2px solid var(--primary-color) !important;
         margin-bottom: 6px !important;
+        width: 100% !important;
     }
     
     .mobile-title {
@@ -103,14 +99,10 @@ div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
         color: var(--primary-color) !important;
     }
     
-    .stChatMessage {
-        padding: 12px !important;
-        margin-bottom: 10px !important;
-    }
-    
     .align-center-fix {
         min-height: auto !important;
         justify-content: flex-start !important;
+        height: auto !important;
     }
 }
 </style>
@@ -393,21 +385,23 @@ if page == "📋 Planning de l'équipe":
         taches = cursor.fetchall()
         
         if taches:
+            # Ratios optimisés pour laisser de la place aux boutons sans retour à la ligne
             if st.session_state.role == "Administrateur":
-                rep = [0.6, 1.3, 2.8, 1.8, 0.8, 2.2, 1.1, 0.8]
+                rep = [0.6, 1.2, 2.5, 1.8, 0.7, 2.4, 1.4, 0.6]
                 cols_h = st.columns(rep, vertical_alignment="center")
             else:
-                rep = [0.6, 1.4, 3.2, 1.9, 0.9, 2.4, 1.1]
+                rep = [0.6, 1.3, 2.8, 1.9, 0.8, 2.6, 1.4]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            cols_h[0].markdown("<div class='header-mark' style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
-            cols_h[1].markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
-            cols_h[2].markdown("<div style='text-align: center;'><b>Mission (cliquable)</b></div>", unsafe_allow_html=True)
-            cols_h[3].markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
-            cols_h[4].markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
-            cols_h[5].markdown("<div style='text-align: center;'><b>Statut</b></div>", unsafe_allow_html=True)
-            cols_h[6].markdown("<div style='text-align: center;'><b>Action</b></div>", unsafe_allow_html=True)
-            if st.session_state.role == "Administrateur": cols_h[7].markdown("<div style='text-align: center;'><b>Suppr.</b></div>", unsafe_allow_html=True)
+            with cols_h[0]: st.markdown("<div class='header-mark' style='text-align: center; font-weight: bold;'>N°</div>", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("<div style='text-align: center; font-weight: bold;'>Assigné à</div>", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("<div style='text-align: center; font-weight: bold;'>Mission (cliquable)</div>", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("<div style='text-align: center; font-weight: bold;'>Urgence</div>", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("<div style='text-align: center; font-weight: bold;'>Temps</div>", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("<div style='text-align: center; font-weight: bold;'>Statut</div>", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("<div style='text-align: center; font-weight: bold;'>Action</div>", unsafe_allow_html=True)
+            if st.session_state.role == "Administrateur": 
+                with cols_h[7]: st.markdown("<div style='text-align: center; font-weight: bold;'>Suppr.</div>", unsafe_allow_html=True)
                 
             st.markdown('<hr class="desktop-text" style="margin: 10px 0; border-color: #cbd5e1;">', unsafe_allow_html=True)
 
@@ -417,222 +411,30 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
-                cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
+                with cols[0]:
+                    st.markdown(f'<div class="desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
+                
+                with cols[1]:
+                    st.markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
                 
                 # Système de troncation
                 limite_caracteres = 28
                 quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                 
-                cols[2].markdown('<div class="mobile-text" style="margin-top: 4px;"><span class="mobile-label">📋 Mission (cliquer pour agrandir)</span></div>', unsafe_allow_html=True)
-                if cols[2].button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True, help="Cliquez pour lire la description complète"):
-                    st.session_state.modal_mission = (num, qui, quoi)
-                    st.rerun()
-
-                cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
-                cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
-                
-                if statut == "En cours ⏳":
-                    cols[5].markdown('<div class="desktop-text align-center-fix"></div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #eab308; font-weight: bold;">🟡 En cours</span></div>', unsafe_allow_html=True)
-                    with cols[5]:
-                        st.markdown('<div class="desktop-text align-center-fix" style="font-weight: bold; color: #eab308;">🟡 En cours</div>', unsafe_allow_html=True)
-                else:
-                    cols[5].markdown(f'<div class="desktop-text align-center-fix"></div><div class="mobile-text mobile-field" style="border-bottom: none !important;"><span class="mobile-label">⚡ Statut</span><span class="mobile-value" style="color: #22c55e; font-weight: bold;">🟢 {statut}</span></div>', unsafe_allow_html=True)
-                    with cols[5]:
-                        st.markdown(f'<div class="desktop-text align-center-fix" style="font-weight: bold; color: #22c55e;">🟢 {statut}</div>', unsafe_allow_html=True)
-                    
-                if statut == "En cours ⏳":
-                    if st.session_state.user == qui or st.session_state.role == "Administrateur":
-                        if cols[6].button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
-                            maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y à %H:%M")
-                            cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
-                            conn.commit()
-                            st.rerun()
-                    else:
-                        cols[6].markdown("<div class='desktop-text align-center-fix' style='color: gray;'>—</div>", unsafe_allow_html=True)
-                else:
-                    if st.session_state.user == qui or st.session_state.role == "Administrateur":
-                        if cols[6].button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
-                            cursor.execute("UPDATE planning SET date_realisation = 'En cours ⏳' WHERE id = ?", (id_t,))
-                            conn.commit()
-                            st.rerun()
-                    else:
-                        cols[6].markdown("<div class='desktop-text align-center-fix' style='color: gray;'>—</div>", unsafe_allow_html=True)
-                
-                if st.session_state.role == "Administrateur":
-                    if cols[7].button("🗑️", key=f"btn_del_tache_{id_t}", use_container_width=True):
-                        cursor.execute("DELETE FROM planning WHERE id = ?", (id_t,))
-                        conn.commit()
+                with cols[2]:
+                    st.markdown('<div class="mobile-text" style="margin-top: 4px;"><span class="mobile-label">📋 Mission (cliquer pour agrandir)</span></div>', unsafe_allow_html=True)
+                    if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True, help="Cliquez pour lire la description complète"):
+                        st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
-                        
-                st.markdown('<hr class="desktop-text" style="margin: 10px 0; border-color: #f1f5f9;">', unsafe_allow_html=True)
-        else:
-            st.info("Aucune tâche planifiée.")
 
-    afficher_tableau_taches()
-
-
-# ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ
-# ==========================================
-elif page == "💬 Zone Tchat":
-    st.title("💬 Centre de Communication")
-    st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
-    
-    cursor.execute("SELECT prenom FROM utilisateurs")
-    employes = [row[0] for row in cursor.fetchall()]
-    if "Christophe" not in employes: employes.append("Christophe")
-        
-    options_tchat = ["📢 Canal #Général"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
-    choix_tchat = st.selectbox("Discussion active :", options_tchat)
-    st.write("---")
-
-    @st.fragment(run_every=6)
-    def afficher_flux_messages(cible_tchat):
-        if cible_tchat == "📢 Canal #Général":
-            st.subheader("📢 Fil d'actualité Général")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
-        else:
-            cible = cible_tchat.replace("🔒 Privé avec ", "")
-            st.subheader(f"🔒 Bulle privée avec {cible}")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC", (st.session_state.user, cible, cible, st.session_state.user))
-        
-        messages = cursor.fetchall()
-        zone_msg = st.container(height=380)
-        with zone_msg:
-            if messages:
-                for m in messages:
-                    id_msg, exp, txt, date, permanent = m
-                    
-                    base_largeur = [8.5, 0.75, 0.75] if st.session_state.role == "Administrateur" else [9.2, 0.8]
-                    cols_msg = st.columns(base_largeur, vertical_alignment="center")
-                    
-                    with cols_msg[0]:
-                        label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
-                        st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
-                    
-                    if cols_msg[1].button("📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver", use_container_width=True):
-                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (0 if permanent == 1 else 1, id_msg))
-                        conn.commit()
-                        st.rerun()
-                        
-                    if st.session_state.role == "Administrateur" and cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
-                        cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
-                        conn.commit()
-                        st.rerun()
-            else:
-                st.caption("Aucun échange pour le moment.")
-
-    afficher_flux_messages(choix_tchat)
-
-    with st.form("form_msg", clear_on_submit=True):
-        col_txt, col_btn = st.columns([8.2, 1.8], vertical_alignment="center")
-        nouveau_msg = col_txt.text_input("Tapez votre message ici...", label_visibility="collapsed")
-        if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
-            dest = "Tous" if choix_tchat == "📢 Canal #Général" else choix_tchat.replace("🔒 Privé avec ", "")
-            now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-            cursor.execute("INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute, garder_permanent) VALUES (?, ?, ?, ?, ?, 0)", (st.session_state.user, dest, nouveau_msg.strip(), now_paris.strftime("%H:%M"), now_paris.strftime("%Y-%m-%d %H:%M:%S")))
-            conn.commit()
-            st.rerun()
-
-
-# ==========================================
-# 🗄️ PAGE 3 : ARCHIVES
-# ==========================================
-elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
-    st.title("🗄️ Archives Administrateur")
-    
-    if st.session_state.modal_mission:
-        num_m, qui_m, quoi_m = st.session_state.modal_mission
-        with st.container(border=True):
-            st.markdown(f"### 🔍 Détails de la Mission Archivée — Tâche N° {num_m}")
-            st.markdown(f"👤 **Assigné à :** {qui_m}")
-            st.info(quoi_m)
-            if st.button("Fermer la description ❌", use_container_width=True):
-                st.session_state.modal_mission = None
-                st.rerun()
-        st.write("---")
-
-    onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
-    
-    with onglet_taches:
-        cursor.execute("""
-            SELECT 'historique' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
-            FROM planning_archive
-            UNION ALL
-            SELECT 'recents' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, 'En attente de transfert' AS date_archivage 
-            FROM planning 
-            WHERE date_realisation LIKE 'Fait le %'
-            ORDER BY date_archivage DESC
-        """)
-        taches_archived = cursor.fetchall()
-        
-        if taches_archived:
-            rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.4, 0.8]
-            cols_h = st.columns(rep_arch, vertical_alignment="center")
-            
-            cols_h[0].markdown("<div class='header-mark' style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
-            cols_h[1].markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
-            cols_h[2].markdown("<div style='text-align: center;'><b>Mission (cliquable)</b></div>", unsafe_allow_html=True)
-            cols_h[3].markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
-            cols_h[4].markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
-            cols_h[5].markdown("<div style='text-align: center;'><b>Statut</b></div>", unsafe_allow_html=True)
-            cols_h[6].markdown("<div style='text-align: center;'><b>Archivé le</b></div>", unsafe_allow_html=True)
-            cols_h[7].markdown("<div style='text-align: center;'><b>Suppr.</b></div>", unsafe_allow_html=True)
-            
-            st.markdown('<hr style="margin: 10px 0; border-color: #cbd5e1;">', unsafe_allow_html=True)
-            
-            for ta in taches_archived:
-                provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
-                c = st.columns(rep_arch, vertical_alignment="center")
+                with cols[3]:
+                    st.markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
                 
-                c[0].markdown(f'<div class="task-row-mark align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
-                c[1].markdown(f'<div class="align-center-fix">{qui}</div>', unsafe_allow_html=True)
+                with cols[4]:
+                    st.markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
                 
-                limite_caracteres = 25
-                quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
-                if c[2].button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
-                    st.session_state.modal_mission = (num, qui, quoi)
-                    st.rerun()
-
-                c[3].markdown(f'<div class="align-center-fix">{priorite}</div>', unsafe_allow_html=True)
-                c[4].markdown(f'<div class="align-center-fix">{temps}</div>', unsafe_allow_html=True)
-                c[5].markdown(f'<div class="align-center-fix">{statut}</div>', unsafe_allow_html=True)
-                c[6].markdown(f'<div class="align-center-fix"><i>{date_arch}</i></div>', unsafe_allow_html=True)
-                
-                if c[7].button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
-                    if provenance == 'historique': cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
-                    else: cursor.execute("DELETE FROM planning WHERE id = ?", (id_arch,))
-                    conn.commit()
-                    st.rerun()
-                    
-                st.markdown('<hr style="margin: 10px 0; border-color: #f1f5f9;">', unsafe_allow_html=True)
-        else:
-            st.info("Archives de tâches vides.")
-            
-    with onglet_messages:
-        st.caption("⚠️ Les messages classiques s'effacent automatiquement après 14 jours. Ceux avec l'épingle 📌 restent indéfiniment.")
-        cursor.execute("SELECT id, expediteur, destinataire, texte, date_creation_brute, garder_permanent FROM tchat_archive ORDER BY id DESC")
-        messages_archived = cursor.fetchall()
-        
-        if messages_archived:
-            with st.container(height=400):
-                for ma in messages_archived:
-                    id_msg_arch, exp, dest, txt, date_brute, permanent_arch = ma
-                    col_b_msg, col_b_pin, col_b_del = st.columns([8.4, 0.8, 0.8], vertical_alignment="center")
-                    
-                    with col_b_msg:
-                        label_perm_arch = " 📌 [SAUVEGARDÉ INDÉFINIMENT]" if permanent_arch == 1 else ""
-                        st.write(f"📢 **[{dest}]** *({date_brute})*{label_perm_arch} **{exp}** : {txt}")
-                    
-                    if col_b_pin.button("📍" if permanent_arch == 1 else "📌", key=f"pin_arch_{id_msg_arch}", use_container_width=True):
-                        cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (0 if permanent_arch == 1 else 1, id_msg_arch))
-                        conn.commit()
-                        st.rerun()
-                        
-                    if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
-                        cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
-                        conn.commit()
-                        st.rerun()
-        else:
-            st.info("Aucun message archivé.")
+                with cols[5]:
+                    color = "#eab308" if "En cours" in statut else "#22c55e"
+                    emoji = "🟡" if "En cours" in statut else "🟢"
+                    st.markdown(f"""
+                    <div class="desktop-text align-center-fix" style="font-weight: bold; color: {color};">{emoji} {statut
