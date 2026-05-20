@@ -134,7 +134,7 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION OPTIMISÉE (S'exécute UNE SEULE FOIS par session) ---
+# --- INITIALISATION OPTIMISÉE ---
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT)")
@@ -152,7 +152,7 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
+# --- NETTOYAGE & ARCHIVAGE AUTOMATIQUE CORRIGÉ ---
 @st.cache_data(ttl=43200)
 def nettoyer_et_archiver_data():
     now_paris = datetime.now(ZoneInfo("Europe/Paris"))
@@ -160,6 +160,7 @@ def nettoyer_et_archiver_data():
     il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
     date_actuelle = now_paris.strftime("%Y-%m-%d %H:%M:%S")
     
+    # Archivage tchat
     cursor.execute("""
         INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage)
         SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?
@@ -167,13 +168,15 @@ def nettoyer_et_archiver_data():
     """, (date_actuelle, il_y_a_deux_semaines))
     cursor.execute("DELETE FROM tchat WHERE date_creation_brute < ?", (il_y_a_deux_semaines,))
     
+    # FIX ICI : Remplacement de 'Le %' par 'Fait le %'
     cursor.execute("""
         INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
         SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
-        FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?
+        FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?
     """, (date_actuelle, il_y_a_deux_semaines))
-    cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
+    cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
     
+    # Suppressions définitives automatiques après 6 mois
     cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
     conn.commit()
@@ -281,7 +284,7 @@ with st.sidebar:
 
 
 # ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE RESPONSIVE
+# PAGE 1 : LE PLANNING DYNAMIQUE
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
@@ -341,7 +344,6 @@ if page == "📋 Planning de l'équipe":
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
-                # Ajout de la classe "align-center-fix" sur tous les éléments de la ligne
                 cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text" style="font-size: 1.15em; color: #1e3a8a; margin-bottom: 4px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;"><b>🔢 Tâche N° {num}</b></div>', unsafe_allow_html=True)
                 cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text"><b>👤 Assigné à :</b> {qui}</div>', unsafe_allow_html=True)
                 cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text"><b>📋 Mission :</b> {quoi}</div>', unsafe_allow_html=True)
@@ -385,7 +387,7 @@ if page == "📋 Planning de l'équipe":
 
 
 # ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ ET RESPONSIVE
+# PAGE 2 : LE TCHAT PRIVÉ
 # ==========================================
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
@@ -442,7 +444,7 @@ elif page == "💬 Zone Tchat":
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES (6 MOIS)
+# 🗄️ PAGE 3 : ARCHIVES AVEC SUPPRESSION (6 MOIS)
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
@@ -450,33 +452,65 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
     onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
     
     with onglet_taches:
-        cursor.execute("SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage FROM planning_archive ORDER BY id DESC")
+        # Sélection de l'id pour pouvoir supprimer individuellement
+        cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage FROM planning_archive ORDER BY id DESC")
         taches_archived = cursor.fetchall()
         
         if taches_archived:
-            rep_arch = [0.8, 1.5, 3.2, 1.8, 1.0, 2.5, 1.5]
-            st.markdown('<hr class="desktop-text" style="margin: 10px 0; border-color: #cbd5e1;">', unsafe_allow_html=True)
+            # Grille responsive et centrée avec intégration du bouton poubelle
+            rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.2, 0.8]
+            
+            cols_h = st.columns(rep_arch, vertical_alignment="center")
+            cols_h[0].markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
+            cols_h[1].markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
+            cols_h[2].markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
+            cols_h[3].markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
+            cols_h[4].markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
+            cols_h[5].markdown("<div style='text-align: center;'><b>Statut</b></div>", unsafe_allow_html=True)
+            cols_h[6].markdown("<div style='text-align: center;'><b>Archivé le</b></div>", unsafe_allow_html=True)
+            cols_h[7].markdown("<div style='text-align: center;'><b>Suppr.</b></div>", unsafe_allow_html=True)
+            
+            st.markdown('<hr style="margin: 10px 0; border-color: #cbd5e1;">', unsafe_allow_html=True)
             
             for ta in taches_archived:
-                num, qui, quoi, temps, statut, priorite, date_arch = ta
+                id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
                 c = st.columns(rep_arch, vertical_alignment="center")
-                c[0].markdown(f'<b>{num}</b>', unsafe_allow_html=True)
-                c[1].write(qui)
-                c[2].write(quoi)
-                c[3].write(priorite)
-                c[4].write(temps)
-                c[5].write(f"🟢 {statut}")
-                c[6].write(date_arch)
+                
+                c[0].markdown(f'<div class="align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
+                c[1].markdown(f'<div class="align-center-fix">{qui}</div>', unsafe_allow_html=True)
+                c[2].markdown(f'<div class="align-center-fix">{quoi}</div>', unsafe_allow_html=True)
+                c[3].markdown(f'<div class="align-center-fix">{priorite}</div>', unsafe_allow_html=True)
+                c[4].markdown(f'<div class="align-center-fix">{temps}</div>', unsafe_allow_html=True)
+                c[5].markdown(f'<div class="align-center-fix">{statut}</div>', unsafe_allow_html=True)
+                c[6].markdown(f'<div class="align-center-fix">{date_arch}</div>', unsafe_allow_html=True)
+                
+                # Bouton de suppression définitive de l'archive
+                if c[7].button("🗑️", key=f"btn_del_arch_tache_{id_arch}", use_container_width=True):
+                    cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
+                    conn.commit()
+                    st.rerun()
+                    
+                st.markdown('<hr style="margin: 10px 0; border-color: #f1f5f9;">', unsafe_allow_html=True)
         else:
-            st.info("Archives vides.")
+            st.info("Archives de tâches vides.")
             
     with onglet_messages:
-        cursor.execute("SELECT expediteur, destinataire, texte, date_creation_brute FROM tchat_archive ORDER BY id DESC")
+        cursor.execute("SELECT id, expediteur, destinataire, texte, date_creation_brute FROM tchat_archive ORDER BY id DESC")
         messages_archived = cursor.fetchall()
+        
         if messages_archived:
             with st.container(height=400):
                 for ma in messages_archived:
-                    exp, dest, txt, date_brute = ma
-                    st.write(f"📢 **[{dest}]** *({date_brute})* **{exp}** : {txt}")
+                    id_msg_arch, exp, dest, txt, date_brute = ma
+                    col_b_msg, col_b_del = st.columns([9.1, 0.9], vertical_alignment="center")
+                    
+                    with col_b_msg:
+                        st.write(f"📢 **[{dest}]** *({date_brute})* **{exp}** : {txt}")
+                    
+                    # Bouton de suppression définitive du message archivé
+                    if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
+                        cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
+                        conn.commit()
+                        st.rerun()
         else:
             st.info("Aucun message archivé.")
