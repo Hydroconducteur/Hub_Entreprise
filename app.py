@@ -27,6 +27,15 @@ st.markdown("""
     margin-bottom: 0 !important;
 }
 
+/* Style personnalisé pour les boutons de mission style "lien/texte" */
+div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"] {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    border: 1px dashed rgba(128, 128, 128, 0.3) !important;
+    background-color: transparent !important;
+    padding: 4px 8px !important;
+}
+
 @media (max-width: 768px) {
     .mobile-text { display: block !important; }
     .desktop-text { display: none !important; }
@@ -175,7 +184,6 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     
-    # Sécurités d'ajouts de colonnes si tables déjà existantes
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
     try: cursor.execute("ALTER TABLE tchat ADD COLUMN garder_permanent INTEGER DEFAULT 0")
@@ -190,7 +198,7 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE TOUT-EN-UN (SÉCURISÉ) ---
+# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
 @st.cache_data(ttl=60)
 def nettoyer_et_archiver_data():
     try:
@@ -198,9 +206,7 @@ def nettoyer_et_archiver_data():
         heure_actuelle = now_paris.hour
         date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
         
-        # 1. GESTION DU TCHAT : En dehors de 8h-20h, on bascule les messages en archive
         if heure_actuelle >= 20 or heure_actuelle < 8:
-            # On vérifie d'abord s'il y a des messages à archiver pour éviter d'insérer du vide
             cursor.execute("SELECT COUNT(*) FROM tchat")
             if cursor.fetchone()[0] > 0:
                 cursor.execute("""
@@ -210,12 +216,10 @@ def nettoyer_et_archiver_data():
                 cursor.execute("DELETE FROM tchat")
                 conn.commit()
 
-        # 2. GESTION DE LA PURGE DES ARCHIVES TCHAT (Après 14 jours si non permanents)
         il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
         conn.commit()
         
-        # 3. GESTION DU PLANNING
         cursor.execute("""
             INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
             SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
@@ -226,8 +230,7 @@ def nettoyer_et_archiver_data():
         il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
         conn.commit()
-    except Exception as e:
-        # Permet à l'application de ne pas planter complètement si Turso a un problème de connexion momentané
+    except Exception:
         pass
     return True
 
@@ -237,6 +240,7 @@ nettoyer_et_archiver_data()
 if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
+if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
 
 # --- CONNEXION AUTOMATIQUE VIA URL ---
 parametres_url = st.query_params
@@ -334,7 +338,20 @@ with st.sidebar:
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi synchronisé en temps réel (sans rechargement de page).")
+    st.caption("Suivi synchronisé en temps réel. Cliquez sur l'intitulé d'une mission pour la lire en grand.")
+
+    # ZONE DE FOCUS (MODALE ACCESSIBLE)
+    if st.session_state.modal_mission:
+        num_m, qui_m, quoi_m = st.session_state.modal_mission
+        with st.container(border=True):
+            st.markdown(f"### 🔍 Détails de la Mission — Tâche N° {num_m}")
+            st.markdown(f"👤 **Assigné à :** {qui_m}")
+            st.markdown("📋 **Description complète :**")
+            st.info(quoi_m)
+            if st.button("Fermer la description ❌", use_container_width=True):
+                st.session_state.modal_mission = None
+                st.rerun()
+        st.write("---")
 
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
@@ -375,7 +392,7 @@ if page == "📋 Planning de l'équipe":
             
             cols_h[0].markdown("<div class='header-mark' style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
             cols_h[1].markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
-            cols_h[2].markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
+            cols_h[2].markdown("<div style='text-align: center;'><b>Mission (cliquable)</b></div>", unsafe_allow_html=True)
             cols_h[3].markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
             cols_h[4].markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
             cols_h[5].markdown("<div style='text-align: center;'><b>Statut</b></div>", unsafe_allow_html=True)
@@ -392,7 +409,16 @@ if page == "📋 Planning de l'équipe":
                 
                 cols[0].markdown(f'<div class="task-row-mark desktop-text align-center-fix"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
                 cols[1].markdown(f'<div class="desktop-text align-center-fix">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
-                cols[2].markdown(f'<div class="desktop-text align-center-fix">{quoi}</div><div class="mobile-text mobile-field" style="flex-direction: column !important; align-items: flex-start !important; gap: 4px !important;"><span class="mobile-label">📋 Mission</span><span class="mobile-value" style="text-align: left !important; width: 100% !important; font-weight: normal !important; padding-top: 2px;">{quoi}</span></div>', unsafe_allow_html=True)
+                
+                # LOGIQUE DE TRONCATION ET ZOOM DE MISSION RE-STYLISE
+                limite_caracteres = 28
+                quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
+                
+                cols[2].markdown('<div class="mobile-text" style="margin-top: 4px;"><span class="mobile-label">📋 Mission (cliquer pour agrandir)</span></div>', unsafe_allow_html=True)
+                if cols[2].button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True, help="Cliquez pour lire la description complète"):
+                    st.session_state.modal_mission = (num, qui, quoi)
+                    st.rerun()
+
                 cols[3].markdown(f'<div class="desktop-text align-center-fix">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
                 cols[4].markdown(f'<div class="desktop-text align-center-fix">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
                 
@@ -471,21 +497,15 @@ elif page == "💬 Zone Tchat":
                         label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
                         st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
                     
-                    # Bouton Épingle
-                    icon_epingle = "📍" if permanent == 1 else "📌"
-                    tip_epingle = "Ne pas archiver/supprimer" if permanent == 0 else "Enlever la sauvegarde permanente"
-                    if cols_msg[1].button(icon_epingle, key=f"pin_live_{id_msg}", help=tip_epingle, use_container_width=True):
-                        nouvel_etat = 0 if permanent == 1 else 1
-                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (nouvel_etat, id_msg))
+                    if cols_msg[1].button(icon_epingle := "📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver/supprimer", use_container_width=True):
+                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (0 if permanent == 1 else 1, id_msg))
                         conn.commit()
                         st.rerun()
                         
-                    # Bouton Supprimer
-                    if st.session_state.role == "Administrateur":
-                        if cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
-                            cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
-                            conn.commit()
-                            st.rerun()
+                    if st.session_state.role == "Administrateur" and cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
+                        cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
+                        conn.commit()
+                        st.rerun()
             else:
                 st.caption("Aucun échange pour le moment.")
 
@@ -508,6 +528,18 @@ elif page == "💬 Zone Tchat":
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
+    # ZONE DE FOCUS POUR LES ARCHIVES
+    if st.session_state.modal_mission:
+        num_m, qui_m, quoi_m = st.session_state.modal_mission
+        with st.container(border=True):
+            st.markdown(f"### 🔍 Détails de la Mission Archivée — Tâche N° {num_m}")
+            st.markdown(f"👤 **Assigné à :** {qui_m}")
+            st.info(quoi_m)
+            if st.button("Fermer la description ❌", use_container_width=True):
+                st.session_state.modal_mission = None
+                st.rerun()
+        st.write("---")
+
     onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
     
     with onglet_taches:
@@ -524,11 +556,11 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
         
         if taches_archived:
             rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.4, 0.8]
-            
             cols_h = st.columns(rep_arch, vertical_alignment="center")
+            # En-têtes du tableau...
             cols_h[0].markdown("<div style='text-align: center;'><b>N°</b></div>", unsafe_allow_html=True)
             cols_h[1].markdown("<div style='text-align: center;'><b>Assigné à</b></div>", unsafe_allow_html=True)
-            cols_h[2].markdown("<div style='text-align: center;'><b>Mission</b></div>", unsafe_allow_html=True)
+            cols_h[2].markdown("<div style='text-align: center;'><b>Mission (cliquable)</b></div>", unsafe_allow_html=True)
             cols_h[3].markdown("<div style='text-align: center;'><b>Urgence</b></div>", unsafe_allow_html=True)
             cols_h[4].markdown("<div style='text-align: center;'><b>Temps</b></div>", unsafe_allow_html=True)
             cols_h[5].markdown("<div style='text-align: center;'><b>Statut</b></div>", unsafe_allow_html=True)
@@ -543,17 +575,22 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 
                 c[0].markdown(f'<div class="align-center-fix"><b>{num}</b></div>', unsafe_allow_html=True)
                 c[1].markdown(f'<div class="align-center-fix">{qui}</div>', unsafe_allow_html=True)
-                c[2].markdown(f'<div class="align-center-fix">{quoi}</div>', unsafe_allow_html=True)
+                
+                # Appliqué également aux archives tâches
+                limite_caracteres = 25
+                quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
+                if c[2].button(quoi_affiche_arch, key=f"mission_arch_btn_{provenance}_{id_arch}", use_container_width=True):
+                    st.session_state.modal_mission = (num, qui, quoi)
+                    st.rerun()
+
                 c[3].markdown(f'<div class="align-center-fix">{priorite}</div>', unsafe_allow_html=True)
                 c[4].markdown(f'<div class="align-center-fix">{temps}</div>', unsafe_allow_html=True)
                 c[5].markdown(f'<div class="align-center-fix">{statut}</div>', unsafe_allow_html=True)
                 c[6].markdown(f'<div class="align-center-fix"><i>{date_arch}</i></div>', unsafe_allow_html=True)
                 
                 if c[7].button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
-                    if provenance == 'historique':
-                        cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
-                    else:
-                        cursor.execute("DELETE FROM planning WHERE id = ?", (id_arch,))
+                    if provenance == 'historique': cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
+                    else: cursor.execute("DELETE FROM planning WHERE id = ?", (id_arch,))
                     conn.commit()
                     st.rerun()
                     
@@ -576,15 +613,11 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         label_perm_arch = " 📌 [SAUVEGARDÉ INDÉFINIMENT]" if permanent_arch == 1 else ""
                         st.write(f"📢 **[{dest}]** *({date_brute})*{label_perm_arch} **{exp}** : {txt}")
                     
-                    # Bouton Épingle depuis la zone d'archive (LIGNE FIXÉE ICI)
-                    icon_epingle_arch = "📍" if permanent_arch == 1 else "📌"
-                    if col_b_pin.button(icon_epingle_arch, key=f"pin_arch_{id_msg_arch}", use_container_width=True):
-                        nouvel_etat_arch = 0 if permanent_arch == 1 else 1
-                        cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (nouvel_etat_arch, id_msg_arch))
+                    if col_b_pin.button("📍" if permanent_arch == 1 else "📌", key=f"pin_arch_{id_msg_arch}", use_container_width=True):
+                        cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (0 if permanent_arch == 1 else 1, id_msg_arch))
                         conn.commit()
                         st.rerun()
                         
-                    # Bouton suppression définitive manuelle
                     if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
                         cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
                         conn.commit()
