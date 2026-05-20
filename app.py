@@ -9,69 +9,40 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS RESPONSIVE & ALIGNEMENT HORIZONTAL PARFAIT ---
+# --- INJECTION CSS POUR LE DESIGN & LE RESPONSIVE ---
 st.markdown("""
 <style>
+/* Gestion de l'affichage Desktop vs Mobile */
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* --- ALIGNEMENT DESKTOP GLOBAL UNIFIÉ --- */
-/* 1. On force l'alignement centré sur le conteneur parent de la ligne */
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]),
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]),
-div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-    align-items: center !important;
-}
-
-/* 2. Suppression radicale des marges de blocs Streamlit pour éviter les décalages */
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) .element-container,
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) .element-container,
-div[data-testid="stHorizontalBlock"]:has(.header-mark) .element-container {
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* 3. HARMONISATION DE TOUS LES BOUTONS (Mission, Actions, Suppr) */
-/* On leur donne tous la même hauteur stricte (38px) et on centre leur contenu */
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) button,
-div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_arch_"]) button {
-    height: 38px !important;
-    margin: 0 !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-/* Ajustement visuel spécifique pour le bouton de la mission (aligné à gauche, style encadré) */
-div[data-testid="stHorizontalBlock"] button[key^="mission_btn_"],
-div[data-testid="stHorizontalBlock"] button[key^="mission_btn_arch_"] {
-    text-align: left !important;
-    justify-content: flex-start !important;
-    border: 1px dashed rgba(128, 128, 128, 0.3) !important;
-    background-color: transparent !important;
-    padding: 6px 10px !important;
-    width: 100% !important;
-}
-
-/* 4. HARMONISATION DES TEXTES ET STATUTS */
-/* On force le texte brut et le Statut à s'aligner sur la même hauteur de ligne (38px) */
+/* Supprime la marge basse par défaut du texte pour un alignement parfait */
 div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
     margin: 0 !important;
     padding: 0 !important;
-    line-height: 38px !important;
-    text-align: center !important;
 }
 
-/* --- AFFICHAGE MOBILE --- */
+/* Style épuré UNIQUEMENT pour le bouton Mission (toujours situé dans la 3ème colonne) */
+div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-of-type(3) button {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    border: 1px dashed rgba(128, 128, 128, 0.4) !important;
+    background-color: transparent !important;
+    width: 100% !important;
+}
+
+/* --- VERSION MOBILE RESPONSIVE (CARTES) --- */
 @media (max-width: 768px) {
     .mobile-text { display: block !important; }
     .desktop-text { display: none !important; }
     
+    /* Cache les en-têtes de tableau sur mobile */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         display: none !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) {
+    /* Transforme chaque ligne de tâche en carte isolée */
+    div[data-testid="stHorizontalBlock"]:has(div[data-testid="column"]:nth-of-type(3) button) {
         flex-direction: column !important;
         border: 1px solid rgba(128, 128, 128, 0.18) !important;
         border-radius: 16px !important;
@@ -82,7 +53,7 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
         gap: 10px !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(button[key^="mission_btn_"]) > div[data-testid="column"] {
+    div[data-testid="stHorizontalBlock"]:has(div[data-testid="column"]:nth-of-type(3) button) > div[data-testid="column"] {
         display: block !important;
         min-height: auto !important;
         width: 100% !important;
@@ -430,10 +401,10 @@ if page == "📋 Planning de l'équipe":
                 cols = st.columns(rep, vertical_alignment="center")
                 
                 with cols[0]:
-                    st.markdown(f'<div class="desktop-text"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text" style="text-align: center;"><b>{num}</b></div><div class="mobile-text mobile-header"><span class="mobile-title">🔢 Tâche N° {num}</span></div>', unsafe_allow_html=True)
                 
                 with cols[1]:
-                    st.markdown(f'<div class="desktop-text">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text" style="text-align: center;">{qui}</div><div class="mobile-text mobile-field"><span class="mobile-label">👤 Assigné à</span><span class="mobile-value">{qui}</span></div>', unsafe_allow_html=True)
                 
                 # Système de troncation
                 limite_caracteres = 28
@@ -446,10 +417,10 @@ if page == "📋 Planning de l'équipe":
                         st.rerun()
 
                 with cols[3]:
-                    st.markdown(f'<div class="desktop-text">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text" style="text-align: center;">{priorite}</div><div class="mobile-text mobile-field"><span class="mobile-label">🚨 Urgence</span><span class="mobile-value">{priorite}</span></div>', unsafe_allow_html=True)
                 
                 with cols[4]:
-                    st.markdown(f'<div class="desktop-text">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="desktop-text" style="text-align: center;">{temps}</div><div class="mobile-text mobile-field"><span class="mobile-label">⏱️ Temps</span><span class="mobile-value">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with cols[5]:
                     color = "#eab308" if "En cours" in statut else "#22c55e"
@@ -609,8 +580,8 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                with c[0]: st.markdown(f'<div><b>{num}</b></div>', unsafe_allow_html=True)
-                with c[1]: st.markdown(f'<div>{qui}</div>', unsafe_allow_html=True)
+                with c[0]: st.markdown(f'<div style="text-align: center;"><b>{num}</b></div>', unsafe_allow_html=True)
+                with c[1]: st.markdown(f'<div style="text-align: center;">{qui}</div>', unsafe_allow_html=True)
                 
                 with c[2]:
                     limite_caracteres = 25
@@ -619,10 +590,10 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
 
-                with c[3]: st.markdown(f'<div>{priorite}</div>', unsafe_allow_html=True)
-                with c[4]: st.markdown(f'<div>{temps}</div>', unsafe_allow_html=True)
+                with c[3]: st.markdown(f'<div style="text-align: center;">{priorite}</div>', unsafe_allow_html=True)
+                with c[4]: st.markdown(f'<div style="text-align: center;">{temps}</div>', unsafe_allow_html=True)
                 with c[5]: st.markdown(f'<div style="font-weight: bold; text-align: center;">{statut}</div>', unsafe_allow_html=True)
-                with c[6]: st.markdown(f'<div><i>{date_arch}</i></div>', unsafe_allow_html=True)
+                with c[6]: st.markdown(f'<div style="text-align: center;"><i>{date_arch}</i></div>', unsafe_allow_html=True)
                 
                 with c[7]:
                     if st.button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
