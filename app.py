@@ -78,6 +78,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
         text-align: center !important;
+        margin: 0 !important;
     }
 
     /* Lignes du tableau (Cartes horizontales épurées) */
@@ -327,7 +328,6 @@ def initialiser_structure_base():
     try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
     except sqlite3.OperationalError: pass
     
-    # --- MISE À JOUR ET FORCAGE DU CODE POUR CHRISTOPHE ---
     cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
     admin_row = cursor.fetchone()
     
@@ -387,7 +387,7 @@ if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
 if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
 
-# --- CONNEXION AUTOMATIQUE VIA URL (SÉCURISÉE) ---
+# --- CONNEXION AUTOMATIQUE VIA URL ---
 parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url and "code" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
@@ -493,7 +493,7 @@ with st.sidebar:
 
 
 # ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE (LOOK SAAS)
+# PAGE 1 : LE PLANNING DYNAMIQUE
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
@@ -548,8 +548,8 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.5, 1.7, 0.9, 2.0, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # --- CORRECTION DE L'ALIGNEMENT ET DU LOOK DU "ID / N°" ---
-            with cols_h[0]: st.markdown("<div class='header-mark'></div>ID", unsafe_allow_html=True)
+            # --- 🛠️ CORRECTION APPLIQUÉE ICI (LIGNE & STYLE) ---
+            with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("Mission (Cliquer)", unsafe_allow_html=True)
             with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
@@ -695,7 +695,7 @@ elif page == "💬 Zone Tchat":
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES ADAPTATIVES
+# 🗄️ PAGE 3 : ARCHIVES
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
@@ -729,8 +729,8 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             rep_arch = [0.6, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
-            # --- CORRECTION ICI AUSSI POUR L'ONGLET ARCHIVES ---
-            with cols_h[0]: st.markdown("<div class='header-mark'></div>ID", unsafe_allow_html=True)
+            # --- 🛠️ CORRECTION APPLIQUÉE ICI AUSSI POUR L'ONGLET ARCHIVES ---
+            with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("Mission", unsafe_allow_html=True)
             with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
