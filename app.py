@@ -302,7 +302,7 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION BASE DE DONNÉES ---
+# --- INITIALISATION BASE DE DONNÉES COCHÉE ET MISE À JOUR ADM ---
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
@@ -319,10 +319,14 @@ def initialiser_structure_base():
     try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
     except sqlite3.OperationalError: pass
     
-    # Création automatique du compte maître Christophe s'il n'existe pas
-    cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom = 'Christophe'")
-    if not cursor.fetchone():
+    # --- MISE À JOUR ET FORCAGE DU CODE POUR CHRISTOPHE ---
+    cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
+    admin_row = cursor.fetchone()
+    
+    if not admin_row:
         cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES ('Christophe', 'Admin45')")
+    elif admin_row[1] == '1234' or admin_row[1] is None or admin_row[1] == '':
+        cursor.execute("UPDATE utilisateurs SET code_secret = 'Admin45' WHERE prenom = 'Christophe'")
         
     conn.commit()
 
