@@ -23,116 +23,115 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
     width: 100% !important;
 }
 
-/* --- 🌟 STYLISATION DES BOUTONS DU TABLEAU (LOOK PREMIUM) --- */
+/* --- 🌟 STYLISATION DESIGN PROFESSIONNEL (LOOK SAAS) --- */
 
-/* 1. Le Bouton d'Action Principal (Fait / Annuler) - Colonne 7 */
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+/* 1. Le Bouton d'Action Principal (Fait / Annuler) */
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")),
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Annuler")) {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
     color: white !important;
     border: none !important;
     font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    padding: 6px 14px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+    transition: all 0.2s ease !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")):hover,
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Annuler")):hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af) !important;
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 2. Le Bouton Supprimer (Poubelle) */
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("🗑️")) {
+    background: transparent !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(148, 163, 184, 0.15) !important;
+    border-radius: 6px !important;
     font-size: 0.9rem !important;
-    padding: 6px 16px !important;
-    border-radius: 8px !important;
-    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25) !important;
-    transition: all 0.2s ease-in-out !important;
-    cursor: pointer !important;
-}
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button:hover {
-    background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
-    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4) !important;
-    transform: translateY(-1px) !important;
-}
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button:active {
-    transform: translateY(1px) !important;
-}
-
-/* 2. Le Bouton Supprimer (Poubelle) - Colonne 8 */
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(8) button {
-    background: rgba(239, 68, 68, 0.06) !important;
-    color: #ef4444 !important;
-    border: 1px solid rgba(239, 68, 68, 0.2) !important;
-    border-radius: 8px !important;
-    font-size: 1.05rem !important;
     padding: 5px !important;
-    transition: all 0.2s ease-in-out !important;
+    transition: all 0.2s ease !important;
 }
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(8) button:hover {
-    background: #ef4444 !important;
-    color: white !important;
-    border-color: #ef4444 !important;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35) !important;
-    transform: translateY(-1px) !important;
-}
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(8) button:active {
-    transform: translateY(1px) !important;
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("🗑️")):hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
 }
 
-
-/* --- 💻 COMPORTEMENT GRAPHIQUE DESKTOP (PC) --- */
+/* --- 💻 GRILLE DE DONNÉES DESKTOP (PC) --- */
 @media (min-width: 769px) {
+    /* En-tête du tableau modernisé */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-        background: rgba(128, 128, 128, 0.08) !important;
-        border-radius: 10px !important;
-        padding: 14px 20px !important;
-        margin-bottom: 16px !important;
-        border-bottom: 3px solid var(--primary-color) !important;
+        background: rgba(30, 41, 59, 0.4) !important;
+        border-radius: 6px !important;
+        padding: 10px 16px !important;
+        margin-bottom: 12px !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
-        color: var(--text-color) !important;
-        font-weight: 700 !important;
-        font-size: 0.82rem !important;
+        color: #94a3b8 !important;
+        font-weight: 600 !important;
+        font-size: 0.78rem !important;
         text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-        opacity: 0.8;
+        letter-spacing: 0.5px !important;
         text-align: center !important;
     }
 
+    /* Lignes du tableau (Cartes horizontales épurées) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: var(--secondary-background-color) !important;
-        border: 1px solid rgba(128, 128, 128, 0.15) !important;
-        border-radius: 10px !important;
-        padding: 12px 20px !important;
-        margin-bottom: 10px !important;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-radius: 8px !important;
+        padding: 10px 16px !important;
+        margin-bottom: 8px !important;
         align-items: center !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+        transition: all 0.2s ease !important;
+        position: relative;
     }
     
     div[data-testid="stHorizontalBlock"]:has(.row-marker):hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12) !important;
-        border-color: rgba(128, 128, 128, 0.3) !important;
+        border-color: rgba(255, 255, 255, 0.15) !important;
+        background: #243146 !important;
+        transform: translateX(2px);
     }
 
-    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 5px solid #ef4444 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 5px solid #f97316 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 5px solid #10b981 !important; }
+    /* Bordures colorées de priorité discrètes et élégantes */
+    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 4px solid #ef4444 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 4px solid #f97316 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 4px solid #10b981 !important; }
 
     div[data-testid="stHorizontalBlock"] [data-testid="element-container"] {
         margin-bottom: 0 !important;
         margin-top: 0 !important;
     }
 
+    /* Style du bouton Mission cliquable */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
-        background: transparent !important;
-        border: none !important;
-        color: var(--text-color) !important;
-        text-align: center !important;
-        padding: 0 !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        color: #f8fafc !important;
+        text-align: left !important;
+        padding: 6px 12px !important;
         font-weight: 500 !important;
-        font-size: 0.92rem !important;
-        text-decoration: underline rgba(128, 128, 128, 0.2) !important;
+        font-size: 0.85rem !important;
+        border-radius: 6px !important;
         width: 100% !important;
+        justify-content: flex-start !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button:hover {
-        color: var(--primary-color) !important;
-        text-decoration: underline var(--primary-color) !important;
-        background: transparent !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: rgba(37, 99, 235, 0.4) !important;
+        color: #3b82f6 !important;
     }
 }
 
-/* --- 📱 COMPORTEMENT GRAPHIQUE MOBILE (SMARTPHONES) --- */
+/* --- 📱 COMPORTEMENT MOBILE OPTIMISÉ --- */
 @media (max-width: 768px) {
     .mob-only { display: block !important; }
     .pc-only { display: none !important; }
@@ -140,19 +139,18 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
     div[data-testid="stHorizontalBlock"]:has(.header-mark) { display: none !important; }
     
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: var(--secondary-background-color) !important;
-        border: 1px solid rgba(128, 128, 128, 0.18) !important;
-        border-radius: 14px !important;
-        padding: 16px !important;
-        margin-bottom: 16px !important;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 12px !important;
+        padding: 14px !important;
+        margin-bottom: 12px !important;
         display: flex !important;
         flex-direction: column !important;
     }
     
-    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 6px solid #ef4444 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 6px solid #f97316 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 6px solid #10b981 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 5px solid #ef4444 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 5px solid #f97316 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 5px solid #10b981 !important; }
 
     div[data-testid="stHorizontalBlock"]:has(.row-marker) > div[data-testid="column"] {
         width: 100% !important;
@@ -161,73 +159,83 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
     }
     
     .mob-title {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        color: var(--text-color) !important;
+        color: #f8fafc !important;
         padding-bottom: 6px !important;
-        margin-bottom: 12px !important;
-        border-bottom: 1px solid rgba(128, 128, 128, 0.15) !important;
+        margin-bottom: 10px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     
     .mob-row {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
-        padding: 8px 0 !important;
-        border-bottom: 1px solid rgba(128, 128, 128, 0.08) !important;
+        padding: 6px 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
     }
     .mob-row:last-of-type { border-bottom: none !important; }
     
     .mob-lbl {
-        font-size: 0.75rem !important;
-        color: rgba(128, 128, 128, 0.6) !important;
+        font-size: 0.72rem !important;
+        color: #64748b !important;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
     .mob-val {
-        font-size: 0.92rem !important;
-        color: var(--text-color) !important;
+        font-size: 0.88rem !important;
+        color: #e2e8f0 !important;
         font-weight: 600;
     }
 
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
         width: 100% !important;
-        text-align: center !important;
-        background: rgba(128, 128, 128, 0.08) !important;
-        border: 1px dashed rgba(128, 128, 128, 0.3) !important;
-        padding: 8px !important;
-        border-radius: 8px !important;
-        margin-top: 5px !important;
+        text-align: left !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 8px 12px !important;
+        border-radius: 6px !important;
+        margin-top: 4px !important;
+        color: #f8fafc !important;
     }
 
     div[data-testid="stHorizontalBlock"]:has(.row-marker) button {
         width: 100% !important;
-        border-radius: 8px !important;
-        padding: 10px !important;
+        border-radius: 6px !important;
+        padding: 8px !important;
         font-weight: 600 !important;
-        margin-top: 8px !important;
+        margin-top: 6px !important;
     }
 }
 
-/* --- BADGES DE STATUT STYLE CAPSULE (PILLS) --- */
+/* --- BADGES EN PILULE (MODERNE SAAS) --- */
 .status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.78rem;
     font-weight: 600;
     text-align: center;
+    min-width: 90px;
 }
 .status-pending {
-    background: rgba(245, 158, 11, 0.12) !important;
-    color: #f59e0b !important;
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.1) !important;
+    color: #fbbf24 !important;
+    border: 1px solid rgba(245, 158, 11, 0.2);
 }
 .status-done {
-    background: rgba(16, 185, 129, 0.12) !important;
-    color: #10b981 !important;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.1) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.prio-badge {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #e2e8f0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -441,12 +449,10 @@ with st.sidebar:
         st.write("---")
         st.title("🛡️ Gestion Sécurité")
         
-        # Section de gestion des membres & codes d'accès
         with st.expander("👥 Liste Blanche & Codes", expanded=False):
             with st.form("form_ajouter_employe", clear_on_submit=True):
                 st.caption("Ajouter un nouvel employé autorisé :")
                 nv_nom = st.text_input("Prénom").strip().capitalize()
-                # LE CORRECTIF CORRIGÉ ICI (Changement de type="text" vers type="default")
                 nv_code = st.text_input("Code Secret d'accès", type="default", help="Ex: 4 chiffres")
                 if st.form_submit_button("➕ Autoriser l'employé", use_container_width=True):
                     if nv_nom and nv_code:
@@ -487,11 +493,11 @@ with st.sidebar:
 
 
 # ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE PREMIUM
+# PAGE 1 : LE PLANNING DYNAMIQUE (LOOK SAAS)
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi des flux en temps réel. Cliquez sur le texte d'une mission pour l'ouvrir en grand.")
+    st.caption("Suivi en temps réel. Cliquez sur le bloc d'une mission pour l'ouvrir en grand.")
 
     if st.session_state.modal_mission:
         num_m, qui_m, quoi_m = st.session_state.modal_mission
@@ -536,21 +542,21 @@ if page == "📋 Planning de l'équipe":
         
         if taches:
             if st.session_state.role == "Administrateur":
-                rep = [0.6, 1.2, 2.7, 1.8, 0.7, 2.2, 1.4, 0.6]
+                rep = [0.6, 1.2, 3.2, 1.6, 0.8, 1.8, 1.2, 0.6]
                 cols_h = st.columns(rep, vertical_alignment="center")
             else:
-                rep = [0.6, 1.3, 3.0, 1.9, 0.8, 2.4, 1.4]
+                rep = [0.6, 1.3, 3.5, 1.7, 0.9, 2.0, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission (Cliquer)</div>", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("<div style='text-align: center;'>Urgence</div>", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("<div style='text-align: center;'>Temps</div>", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("<div style='text-align: center;'>Statut</div>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<div style='text-align: center;'>Action</div>", unsafe_allow_html=True)
+            with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("Mission (Cliquer)", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("Temps", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("Statut", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("Action", unsafe_allow_html=True)
             if st.session_state.role == "Administrateur": 
-                with cols_h[7]: st.markdown("<div style='text-align: center;'>Suppr.</div>", unsafe_allow_html=True)
+                with cols_h[7]: st.markdown("Suppr.", unsafe_allow_html=True)
 
             for t in taches:
                 id_t, num, qui, quoi, temps, statut, priorite = t
@@ -563,24 +569,24 @@ if page == "📋 Planning de l'équipe":
                 cols = st.columns(rep, vertical_alignment="center")
                 
                 with cols[0]:
-                    st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; opacity:0.8;">{num}</div><div class="mob-only mob-title">📋 Tâche N° {num}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: 700; color: #94a3b8;">{num}</div><div class="mob-only mob-title">📋 Tâche N° {num}</div>', unsafe_allow_html=True)
                 
                 with cols[1]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with cols[2]:
                     st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 32
+                    limite_caracteres = 36
                     quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True):
                         st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
 
                 with cols[3]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center; font-size:0.9rem;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
                 
                 with cols[4]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight:500;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 500; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with cols[5]:
                     status_class = "status-pending" if "En cours" in statut else "status-done"
@@ -601,7 +607,7 @@ if page == "📋 Planning de l'équipe":
                                 conn.commit()
                                 st.rerun()
                         else:
-                            st.markdown("<div class='pc-only' style='color: #cbd5e1; text-align: center; opacity:0.3;'>—</div>", unsafe_allow_html=True)
+                            st.markdown("<div class='pc-only' style='color: #475569; text-align: center; opacity:0.5;'>—</div>", unsafe_allow_html=True)
                     else:
                         if st.session_state.user == qui or st.session_state.role == "Administrateur":
                             if st.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
@@ -609,7 +615,7 @@ if page == "📋 Planning de l'équipe":
                                 conn.commit()
                                 st.rerun()
                         else:
-                            st.markdown("<div class='pc-only' style='color: #cbd5e1; text-align: center; opacity:0.3;'>—</div>", unsafe_allow_html=True)
+                            st.markdown("<div class='pc-only' style='color: #475569; text-align: center; opacity:0.5;'>—</div>", unsafe_allow_html=True)
                 
                 if st.session_state.role == "Administrateur":
                     with cols[7]:
@@ -719,17 +725,17 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
         taches_archived = cursor.fetchall()
         
         if taches_archived:
-            rep_arch = [0.6, 1.2, 2.7, 1.5, 0.8, 2.0, 1.4, 0.8]
+            rep_arch = [0.6, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
-            with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission</div>", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("<div style='text-align: center;'>Urgence</div>", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("<div style='text-align: center;'>Temps</div>", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("<div style='text-align: center;'>Statut</div>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<div style='text-align: center;'>Archivé le</div>", unsafe_allow_html=True)
-            with cols_h[7]: st.markdown("<div style='text-align: center;'>Suppr.</div>", unsafe_allow_html=True)
+            with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("Mission", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("Temps", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("Statut", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("Archivé le", unsafe_allow_html=True)
+            with cols_h[7]: st.markdown("Suppr.", unsafe_allow_html=True)
             
             for ta in taches_archived:
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
@@ -740,24 +746,24 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                with c[0]: st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; opacity:0.8;">{num}</div><div class="mob-only mob-title">🗄️ Archive N° {num}</div>', unsafe_allow_html=True)
-                with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
+                with c[0]: st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8;">{num}</div><div class="mob-only mob-title">🗄️ Archive N° {num}</div>', unsafe_allow_html=True)
+                with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with c[2]:
                     st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 26
+                    limite_caracteres = 30
                     quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
                         st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
 
-                with c[3]: st.markdown(f'<div class="pc-only" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
-                with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
+                with c[3]: st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
+                with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with c[5]: 
-                    st.markdown(f'<div class="pc-only" style="text-align: center;"><span class="status-badge status-done">Fait</span></div><div class="mob-only mob-row"><span class="mob-lbl">⚡ Statut</span><span class="status-badge status-done">Fait</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only" style="text-align: center;"><span class="status-badge status-done">Archivé</span></div><div class="mob-only mob-row"><span class="mob-lbl">⚡ Statut</span><span class="status-badge status-done">Archivé</span></div>', unsafe_allow_html=True)
                 
-                with c[6]: st.markdown(f'<div class="pc-only" style="text-align: center; font-style: italic; opacity:0.8;">{date_arch}</div><div class="mob-only mob-row"><span class="mob-lbl">📅 Archivage</span><span class="mob-val">{date_arch}</span></div>', unsafe_allow_html=True)
+                with c[6]: st.markdown(f'<div class="pc-only" style="text-align: center; font-style: italic; color: #64748b; font-size: 0.82rem;">{date_arch}</div><div class="mob-only mob-row"><span class="mob-lbl">📅 Archivage</span><span class="mob-val">{date_arch}</span></div>', unsafe_allow_html=True)
                 
                 with c[7]:
                     if st.button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
