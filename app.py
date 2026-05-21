@@ -23,6 +23,52 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
     width: 100% !important;
 }
 
+/* --- 🌟 STYLISATION DES BOUTONS DU TABLEAU (LOOK PREMIUM) --- */
+
+/* 1. Le Bouton d'Action Principal (Fait / Annuler) - Colonne 7 */
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    padding: 6px 16px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25) !important;
+    transition: all 0.2s ease-in-out !important;
+    cursor: pointer !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af) !important;
+    box-shadow: 0 5px 14px rgba(37, 99, 235, 0.4) !important;
+    transform: translateY(-1px) !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button:active {
+    transform: translateY(1px) !important;
+}
+
+/* 2. Le Bouton Supprimer (Poubelle) - Colonne 8 */
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(8) button {
+    background: rgba(239, 68, 68, 0.06) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+    border-radius: 8px !important;
+    font-size: 1.05rem !important;
+    padding: 5px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(8) button:hover {
+    background: #ef4444 !important;
+    color: white !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35) !important;
+    transform: translateY(-1px) !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(8) button:active {
+    transform: translateY(1px) !important;
+}
+
+
 /* --- 💻 COMPORTEMENT GRAPHIQUE DESKTOP (PC) --- */
 @media (min-width: 769px) {
     /* En-tête du tableau style "Dashboard" */
@@ -40,7 +86,7 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
         text-transform: uppercase !important;
         letter-spacing: 1px !important;
         opacity: 0.8;
-        text-align: center !important; /* Centrage parfait des titres */
+        text-align: center !important;
     }
 
     /* Lignes de données dynamiques (Card-Rows) */
@@ -90,12 +136,6 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
         text-decoration: underline var(--primary-color) !important;
         background: transparent !important;
     }
-    
-    /* Amélioration visuelle des boutons d'action standards dans les lignes */
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) button {
-        border-radius: 6px !important;
-        transition: all 0.2s !important;
-    }
 }
 
 /* --- 📱 COMPORTEMENT GRAPHIQUE MOBILE (SMARTPHONES) --- */
@@ -117,7 +157,6 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
         flex-direction: column !important;
     }
     
-    /* Bordures de priorité également visibles sur mobile à gauche */
     div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 6px solid #ef4444 !important; }
     div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 6px solid #f97316 !important; }
     div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 6px solid #10b981 !important; }
@@ -486,7 +525,7 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.0, 1.9, 0.8, 2.4, 1.4]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # Titres de colonnes parfaitement centrés en HTML
+            # Titres de colonnes
             with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission (Cliquer)</div>", unsafe_allow_html=True)
@@ -501,7 +540,6 @@ if page == "📋 Planning de l'équipe":
                 id_t, num, qui, quoi, temps, statut, priorite = t
                 if not priorite: priorite = "🟢 Pas très important"
                 
-                # Détection de l'urgence pour injecter la classe CSS correspondante
                 prio_class = "prio-low"
                 if "Important" in priorite: prio_class = "prio-med"
                 elif "urgent" in priorite.lower(): prio_class = "prio-high"
@@ -668,7 +706,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             rep_arch = [0.6, 1.2, 2.7, 1.5, 0.8, 2.0, 1.4, 0.8]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
-            # Centrage également appliqué aux colonnes de l'archive
             with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission</div>", unsafe_allow_html=True)
