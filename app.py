@@ -67,29 +67,18 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         background: rgba(30, 41, 59, 0.4) !important;
         border-radius: 8px !important;
-        padding: 16px 16px !important; /* Hauteur généreuse et propre de la barre */
+        padding: 12px 16px !important;
         margin-bottom: 14px !important;
         border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
-        display: flex !important;
-        align-items: center !important; /* Centrage des colonnes enfants */
     }
     
-    /* Force le centrage vertical absolu au sein des colonnes de l'en-tête */
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="column"] {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    /* Supprime les décalages internes de conteneurs de texte de Streamlit */
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="column"] [data-testid="element-container"] {
+    /* Supprime les décalages et marges internes de Streamlit sous l'en-tête */
+    div[data-testid="stHorizontalBlock"]:has(.header-mark) [data-testid="element-container"] {
         margin: 0 !important;
         padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
     }
 
+    /* Formatage et alignement parfait au centre des écritots */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
         color: #94a3b8 !important;
         font-weight: 600 !important;
@@ -99,7 +88,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         text-align: center !important;
         margin: 0 !important;
         padding: 0 !important;
-        line-height: 1 !important; /* Évite tout débordement ou décalage vers le bas */
+        line-height: 1.2 !important;
     }
 
     /* Lignes du tableau (Cartes horizontales épurées) */
@@ -569,16 +558,16 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.5, 1.7, 0.9, 2.0, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # Grille d'en-tête responsive
+            # Grille d'en-tête responsive native
             with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("Mission (Cliquer)", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("Temps", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("Statut", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("Action", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("<p>Mission (Cliquer)</p>", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("<p>Action</p>", unsafe_allow_html=True)
             if st.session_state.role == "Administrateur": 
-                with cols_h[7]: st.markdown("Suppr.", unsafe_allow_html=True)
+                with cols_h[7]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
 
             for t in taches:
                 id_t, num, qui, quoi, temps, statut, priorite = t
@@ -750,14 +739,15 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             rep_arch = [0.6, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
+            # Grille d'en-tête de l'archive corrigée et alignée
             with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("Mission", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("Temps", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("Statut", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("Archivé le", unsafe_allow_html=True)
-            with cols_h[7]: st.markdown("Suppr.", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("<p>Mission</p>", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("<p>Archivé le</p>", unsafe_allow_html=True)
+            with cols_h[7]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
             
             for ta in taches_archived:
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
