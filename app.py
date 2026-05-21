@@ -67,12 +67,29 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         background: rgba(30, 41, 59, 0.4) !important;
         border-radius: 8px !important;
-        padding: 16px 16px !important; /* Augmenté pour donner de la hauteur et de l'air */
+        padding: 16px 16px !important; /* Hauteur généreuse et propre de la barre */
         margin-bottom: 14px !important;
         border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
         display: flex !important;
-        align-items: center !important; /* Aligne parfaitement les textes au centre vertical */
+        align-items: center !important; /* Centrage des colonnes enfants */
     }
+    
+    /* Force le centrage vertical absolu au sein des colonnes de l'en-tête */
+    div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="column"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Supprime les décalages internes de conteneurs de texte de Streamlit */
+    div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="column"] [data-testid="element-container"] {
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
     div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
         color: #94a3b8 !important;
         font-weight: 600 !important;
@@ -81,7 +98,8 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         letter-spacing: 0.8px !important;
         text-align: center !important;
         margin: 0 !important;
-        line-height: 1.2 !important;
+        padding: 0 !important;
+        line-height: 1 !important; /* Évite tout débordement ou décalage vers le bas */
     }
 
     /* Lignes du tableau (Cartes horizontales épurées) */
