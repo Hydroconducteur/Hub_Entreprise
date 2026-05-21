@@ -33,6 +33,7 @@ st.markdown("""
         text-transform: uppercase !important;
         letter-spacing: 1px !important;
         opacity: 0.8;
+        text-align: center !important; /* Centrage parfait des titres */
     }
 
     /* Lignes de données dynamiques (Card-Rows) */
@@ -70,12 +71,12 @@ st.markdown("""
         background: transparent !important;
         border: none !important;
         color: var(--text-color) !important;
-        text-align: left !important;
+        text-align: center !important; /* Centré également pour s'aligner au titre */
         padding: 0 !important;
         font-weight: 500 !important;
         font-size: 0.92rem !important;
         text-decoration: underline rgba(128, 128, 128, 0.2) !important;
-        width: auto !important;
+        width: 100% !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button:hover {
         color: var(--primary-color) !important;
@@ -478,16 +479,16 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.0, 1.9, 0.8, 2.4, 1.4]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # Injection de la balise .header-mark pour le CSS Desktop
-            with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("Assigné à")
-            with cols_h[2]: st.markdown("Mission (Cliquer)")
-            with cols_h[3]: st.markdown("Urgence")
-            with cols_h[4]: st.markdown("Temps")
-            with cols_h[5]: st.markdown("Statut")
-            with cols_h[6]: st.markdown("Action")
+            # Titres de colonnes parfaitement centrés en HTML
+            with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission (Cliquer)</div>", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("<div style='text-align: center;'>Urgence</div>", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("<div style='text-align: center;'>Temps</div>", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("<div style='text-align: center;'>Statut</div>", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("<div style='text-align: center;'>Action</div>", unsafe_allow_html=True)
             if st.session_state.role == "Administrateur": 
-                with cols_h[7]: st.markdown("Suppr.")
+                with cols_h[7]: st.markdown("<div style='text-align: center;'>Suppr.</div>", unsafe_allow_html=True)
 
             for t in taches:
                 id_t, num, qui, quoi, temps, statut, priorite = t
@@ -660,14 +661,15 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             rep_arch = [0.6, 1.2, 2.7, 1.5, 0.8, 2.0, 1.4, 0.8]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
-            with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("Assigné à")
-            with cols_h[2]: st.markdown("Mission")
-            with cols_h[3]: st.markdown("Urgence")
-            with cols_h[4]: st.markdown("Temps")
-            with cols_h[5]: st.markdown("Statut")
-            with cols_h[6]: st.markdown("Archivé le")
-            with cols_h[7]: st.markdown("Suppr.")
+            # Centrage également appliqué aux colonnes de l'archive
+            with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
+            with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
+            with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission</div>", unsafe_allow_html=True)
+            with cols_h[3]: st.markdown("<div style='text-align: center;'>Urgence</div>", unsafe_allow_html=True)
+            with cols_h[4]: st.markdown("<div style='text-align: center;'>Temps</div>", unsafe_allow_html=True)
+            with cols_h[5]: st.markdown("<div style='text-align: center;'>Statut</div>", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("<div style='text-align: center;'>Archivé le</div>", unsafe_allow_html=True)
+            with cols_h[7]: st.markdown("<div style='text-align: center;'>Suppr.</div>", unsafe_allow_html=True)
             
             for ta in taches_archived:
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
