@@ -721,7 +721,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 st.rerun()
         st.write("---")
 
-    onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
+    onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches"])
     
     with onglet_taches:
         cursor.execute("""
@@ -785,30 +785,3 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.rerun()
         else:
             st.info("Les archives de tâches sont vides.")
-            
-    with onglet_messages:
-        st.caption("⚠️ Les messages classiques s'effacent automatiquement après 14 jours. Ceux avec l'épingle 📌 restent indéfiniment.")
-        cursor.execute("SELECT id, expediteur, destinataire, texte, date_creation_brute, garder_permanent FROM tchat_archive ORDER BY id DESC")
-        messages_archived = cursor.fetchall()
-        
-        if messages_archived:
-            with st.container(height=400):
-                for ma in messages_archived:
-                    id_msg_arch, exp, dest, txt, date_brute, permanent_arch = ma
-                    col_b_msg, col_b_pin, col_b_del = st.columns([8.4, 0.8, 0.8], vertical_alignment="center")
-                    
-                    with col_b_msg:
-                        label_perm_arch = " 📌 [SAUVEGARDÉ INDÉFINIMENT]" if permanent_arch == 1 else ""
-                        st.write(f"📢 **[{dest}]** *({date_brute})*{label_perm_arch} **{exp}** : {txt}")
-                    
-                    if col_b_pin.button("📍" if permanent_arch == 1 else "📌", key=f"pin_arch_{id_msg_arch}", use_container_width=True):
-                        cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (0 if permanent_arch == 1 else 1, id_msg_arch))
-                        conn.commit()
-                        st.rerun()
-                        
-                    if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
-                        cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
-                        conn.commit()
-                        st.rerun()
-        else:
-            st.info("Aucun message archivé.")
