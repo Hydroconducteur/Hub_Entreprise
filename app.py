@@ -16,13 +16,21 @@ st.markdown("""
 .mobile-text { display: none; }
 .desktop-text { display: block; }
 
-/* Supprime les marges par défaut pour un alignement vertical parfait (Textes ET Boutons) */
-div[data-testid="stHorizontalBlock"] [data-testid="element-container"] {
-    margin-bottom: 0 !important;
-}
-div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
-    margin: 0 !important;
-    padding: 0 !important;
+/* --- COMPORTEMENT SUR PC (DESKTOP) --- */
+@media (min-width: 769px) {
+    /* Aligne horizontalement et verticalement tous les blocs de colonnes au centre parfait */
+    div[data-testid="stHorizontalBlock"] {
+        align-items: center !important;
+    }
+    /* Supprime les marges internes pour éviter les décalages de pixels */
+    div[data-testid="stHorizontalBlock"] [data-testid="element-container"] {
+        margin-bottom: 0 !important;
+        margin-top: 0 !important;
+    }
+    div[data-testid="stHorizontalBlock"] div[data-testid="stMarkdownContainer"] p {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
 }
 
 /* Style épuré UNIQUEMENT pour le bouton Mission (toujours situé dans la 3ème colonne) */
@@ -439,6 +447,8 @@ if page == "📋 Planning de l'équipe":
                 with cols[6]:
                     if "En cours" in statut:
                         if st.session_state.user == qui or st.session_state.role == "Administrateur":
+                            # Ajout du composant fantôme mobile pour égaliser la structure HTML sur PC
+                            st.markdown('<div class="mobile-text" style="margin-top: 4px;"><span class="mobile-label">⚡ Action</span></div>', unsafe_allow_html=True)
                             if st.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
                                 maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y à %H:%M")
                                 cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
@@ -448,6 +458,7 @@ if page == "📋 Planning de l'équipe":
                             st.markdown("<div class='desktop-text' style='color: gray; text-align: center;'>—</div>", unsafe_allow_html=True)
                     else:
                         if st.session_state.user == qui or st.session_state.role == "Administrateur":
+                            st.markdown('<div class="mobile-text" style="margin-top: 4px;"><span class="mobile-label">⚡ Action</span></div>', unsafe_allow_html=True)
                             if st.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
                                 cursor.execute("UPDATE planning SET date_realisation = 'En cours ⏳' WHERE id = ?", (id_t,))
                                 conn.commit()
@@ -457,6 +468,7 @@ if page == "📋 Planning de l'équipe":
                 
                 if st.session_state.role == "Administrateur":
                     with cols[7]:
+                        st.markdown('<div class="mobile-text" style="margin-top: 4px;"><span class="mobile-label">🗑️ Supprimer</span></div>', unsafe_allow_html=True)
                         if st.button("🗑️", key=f"btn_del_tache_{id_t}", use_container_width=True):
                             cursor.execute("DELETE FROM planning WHERE id = ?", (id_t,))
                             conn.commit()
