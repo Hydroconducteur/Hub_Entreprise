@@ -360,16 +360,6 @@ def nettoyer_et_archiver_data():
         now_paris = datetime.now(ZoneInfo("Europe/Paris"))
         heure_actuelle = now_paris.hour
         date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
-        
-        if heure_actuelle >= 20 or heure_actuelle < 8:
-            cursor.execute("SELECT COUNT(*) FROM tchat")
-            if cursor.fetchone()[0] > 0:
-                cursor.execute("""
-                    INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage, garder_permanent)
-                    SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?, garder_permanent FROM tchat
-                """, (date_actuelle_str,))
-                cursor.execute("DELETE FROM tchat")
-                conn.commit()
 
         il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
