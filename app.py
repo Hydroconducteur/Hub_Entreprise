@@ -711,7 +711,8 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 st.rerun()
         st.write("---")
 
-    onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches"])
+   # Remplace ta ligne d'onglets actuelle par celle-ci (note bien la virgule)
+    onglet_taches, = st.tabs(["📋 Archives Tâches"])
     
     with onglet_taches:
         cursor.execute("""
