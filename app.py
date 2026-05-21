@@ -63,22 +63,25 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
 
 /* --- 💻 GRILLE DE DONNÉES DESKTOP (PC) --- */
 @media (min-width: 769px) {
-    /* En-tête du tableau modernisé */
+    /* En-tête du tableau modernisé et élargi */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         background: rgba(30, 41, 59, 0.4) !important;
-        border-radius: 6px !important;
-        padding: 10px 16px !important;
-        margin-bottom: 12px !important;
+        border-radius: 8px !important;
+        padding: 16px 16px !important; /* Augmenté pour donner de la hauteur et de l'air */
+        margin-bottom: 14px !important;
         border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+        display: flex !important;
+        align-items: center !important; /* Aligne parfaitement les textes au centre vertical */
     }
     div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
         color: #94a3b8 !important;
         font-weight: 600 !important;
-        font-size: 0.78rem !important;
+        font-size: 0.8rem !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
+        letter-spacing: 0.8px !important;
         text-align: center !important;
         margin: 0 !important;
+        line-height: 1.2 !important;
     }
 
     /* Lignes du tableau (Cartes horizontales épurées) */
@@ -548,7 +551,7 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.5, 1.7, 0.9, 2.0, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # --- 🛠️ CORRECTION APPLIQUÉE ICI (LIGNE & STYLE) ---
+            # Grille d'en-tête responsive
             with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("Mission (Cliquer)", unsafe_allow_html=True)
@@ -729,7 +732,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             rep_arch = [0.6, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
-            # --- 🛠️ CORRECTION APPLIQUÉE ICI AUSSI POUR L'ONGLET ARCHIVES ---
             with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("Mission", unsafe_allow_html=True)
