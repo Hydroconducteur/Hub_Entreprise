@@ -71,7 +71,6 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
 
 /* --- 💻 COMPORTEMENT GRAPHIQUE DESKTOP (PC) --- */
 @media (min-width: 769px) {
-    /* En-tête du tableau style "Dashboard" */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         background: rgba(128, 128, 128, 0.08) !important;
         border-radius: 10px !important;
@@ -89,7 +88,6 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
         text-align: center !important;
     }
 
-    /* Lignes de données dynamiques (Card-Rows) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
         background: var(--secondary-background-color) !important;
         border: 1px solid rgba(128, 128, 128, 0.15) !important;
@@ -101,25 +99,21 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
         transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
     }
     
-    /* Effet de survol haut de gamme */
     div[data-testid="stHorizontalBlock"]:has(.row-marker):hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12) !important;
         border-color: rgba(128, 128, 128, 0.3) !important;
     }
 
-    /* Injection dynamique des bordures de Priorité à gauche */
     div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 5px solid #ef4444 !important; }
     div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 5px solid #f97316 !important; }
     div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 5px solid #10b981 !important; }
 
-    /* Nettoyage des marges par défaut de Streamlit */
     div[data-testid="stHorizontalBlock"] [data-testid="element-container"] {
         margin-bottom: 0 !important;
         margin-top: 0 !important;
     }
 
-    /* Rendre le bouton de la Mission invisible graphiquement (Style simple texte cliquable) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
         background: transparent !important;
         border: none !important;
@@ -145,7 +139,6 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
     
     div[data-testid="stHorizontalBlock"]:has(.header-mark) { display: none !important; }
     
-    /* Fiches mobiles style cartes épurées */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
         background: var(--secondary-background-color) !important;
         border: 1px solid rgba(128, 128, 128, 0.18) !important;
@@ -198,7 +191,6 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:
         font-weight: 600;
     }
 
-    /* Bouton d'ouverture de texte sur Mobile */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
         width: 100% !important;
         text-align: center !important;
@@ -314,7 +306,7 @@ cursor = conn.cursor()
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY, code_secret TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     
@@ -324,7 +316,14 @@ def initialiser_structure_base():
     except sqlite3.OperationalError: pass
     try: cursor.execute("ALTER TABLE tchat_archive ADD COLUMN garder_permanent INTEGER DEFAULT 0")
     except sqlite3.OperationalError: pass
+    try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
+    except sqlite3.OperationalError: pass
     
+    # Création automatique du compte maître Christophe s'il n'existe pas
+    cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom = 'Christophe'")
+    if not cursor.fetchone():
+        cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES ('Christophe', 'Admin45')")
+        
     conn.commit()
 
 if "db_ready" not in st.session_state:
@@ -376,19 +375,20 @@ if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
 if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
 
-# --- CONNEXION AUTOMATIQUE VIA URL ---
+# --- CONNEXION AUTOMATIQUE VIA URL (SÉCURISÉE) ---
 parametres_url = st.query_params
-if st.session_state.user is None and "qui" in parametres_url:
+if st.session_state.user is None and "qui" in parametres_url and "code" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
-    if prenom_detecte != "":
+    code_detecte = parametres_url["code"].strip()
+    
+    cursor.execute("SELECT code_secret FROM utilisateurs WHERE prenom = ?", (prenom_detecte,))
+    row = cursor.fetchone()
+    if row and row[0] == code_detecte:
+        st.session_state.user = prenom_detecte
         if prenom_detecte == "Christophe":
-            st.session_state.user = prenom_detecte
             st.session_state.role = "Administrateur"
         else:
-            st.session_state.user = prenom_detecte
             st.session_state.role = "Employé"
-        cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (st.session_state.user,))
-        conn.commit()
         st.rerun()
 
 # --- ÉCRAN DE CONNEXION PRINCIPAL ---
@@ -398,26 +398,23 @@ if st.session_state.user is None:
     
     with st.container(border=True):
         identifiant = st.text_input("Identifiant (Votre Prénom)")
-        role_choisi = st.selectbox("Sélectionnez votre rôle", ["Employé", "Administrateur"])
+        code_s = st.text_input("Code Secret", type="password")
         
         if st.button("Se connecter au Hub 🚀", use_container_width=True):
             prenom_propre = identifiant.strip().capitalize()
             if prenom_propre != "":
-                if prenom_propre == "Christophe":
-                    st.session_state.user = prenom_propre
-                    st.session_state.role = "Administrateur"
-                else:
-                    if role_choisi == "Administrateur":
-                        st.error("❌ Accès Administrateur refusé.")
-                        st.session_state.user = prenom_propre
-                        st.session_state.role = "Employé"
-                    else:
-                        st.session_state.user = prenom_propre
-                        st.session_state.role = "Employé"
+                cursor.execute("SELECT code_secret FROM utilisateurs WHERE prenom = ?", (prenom_propre,))
+                row = cursor.fetchone()
                 
-                cursor.execute("INSERT OR IGNORE INTO utilisateurs (prenom) VALUES (?)", (prenom_propre,))
-                conn.commit()
-                st.rerun()
+                if row and row[0] == code_s:
+                    st.session_state.user = prenom_propre
+                    if prenom_propre == "Christophe":
+                        st.session_state.role = "Administrateur"
+                    else:
+                        st.session_state.role = "Employé"
+                    st.rerun()
+                else:
+                    st.error("❌ Prénom ou Code Secret incorrect. Vous devez être invité par Christophe.")
     st.stop()
 
 # --- BARRE LATÉRALE ---
@@ -438,33 +435,50 @@ with st.sidebar:
 
     if st.session_state.role == "Administrateur":
         st.write("---")
-        st.title("🛡️ Gestion Système")
-        cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
-        membres = cursor.fetchall()
+        st.title("🛡️ Gestion Sécurité")
         
-        with st.expander("👥 Membres enregistrés", expanded=False):
+        # Section de gestion des membres & codes d'accès
+        with st.expander("👥 Liste Blanche & Codes", expanded=False):
+            with st.form("form_ajouter_employe", clear_on_submit=True):
+                st.caption("Ajouter un nouvel employé autorisé :")
+                nv_nom = st.text_input("Prénom").strip().capitalize()
+                nv_code = st.text_input("Code Secret d'accès", type="text", help="Ex: 4 chiffres")
+                if st.form_submit_button("➕ Autoriser l'employé", use_container_width=True):
+                    if nv_nom and nv_code:
+                        cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES (?, ?)", (nv_nom, nv_code))
+                        conn.commit()
+                        st.success(f"L'employé {nv_nom} a été ajouté.")
+                        st.rerun()
+
+            st.write("---")
+            cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
+            membres = cursor.fetchall()
             if membres:
                 for m in membres:
-                    nom_membre = m[0]
-                    col_m_nom, col_m_del = st.columns([7, 3], vertical_alignment="center")
+                    nom_membre, code_membre = m
+                    col_m_nom, col_m_code, col_m_del = st.columns([4, 3, 3], vertical_alignment="center")
                     col_m_nom.write(f"• **{nom_membre}**")
+                    col_m_code.code(code_membre, language="text")
                     if col_m_del.button("🗑️", key=f"user_del_{nom_membre}", use_container_width=True):
                         cursor.execute("DELETE FROM utilisateurs WHERE prenom = ?", (nom_membre,))
                         conn.commit()
                         st.rerun()
             else:
-                st.caption("Aucun employé connecté.")
+                st.caption("Aucun employé sur liste blanche.")
 
-        with st.expander("🔗 Liens d'accès direct", expanded=False):
-            st.caption("Liens magiques de connexion automatique :")
+        with st.expander("🔗 Liens d'accès sécurisés", expanded=False):
+            st.caption("Liens magiques de connexion automatique incluant les clés d'accès :")
             base_url = VOTRE_LIEN_ACTUEL
 
-            st.write("Lien **Christophe** :")
-            st.code(f"{base_url}/?qui=Christophe", language="text")
+            cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
+            c_data = cursor.fetchone()
+            if c_data:
+                st.write("Lien **Christophe** :")
+                st.code(f"{base_url}/?qui=Christophe&code={c_data[1]}", language="text")
             
             for u in membres:
                 st.write(f"Lien **{u[0]}** :")
-                st.code(f"{base_url}/?qui={u[0]}", language="text")
+                st.code(f"{base_url}/?qui={u[0]}&code={u[1]}", language="text")
 
 
 # ==========================================
@@ -474,7 +488,6 @@ if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi des flux en temps réel. Cliquez sur le texte d'une mission pour l'ouvrir en grand.")
 
-    # FENÊTRE FOCUS DE DESCRIPTION
     if st.session_state.modal_mission:
         num_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
@@ -487,7 +500,6 @@ if page == "📋 Planning de l'équipe":
                 st.rerun()
         st.write("---")
 
-    # CREATION TACHE ADMIN
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
@@ -525,7 +537,6 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.0, 1.9, 0.8, 2.4, 1.4]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # Titres de colonnes
             with cols_h[0]: st.markdown("<div class='header-mark'></div><div style='text-align: center;'>N°</div>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("<div style='text-align: center;'>Assigné à</div>", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("<div style='text-align: center;'>Mission (Cliquer)</div>", unsafe_allow_html=True)
