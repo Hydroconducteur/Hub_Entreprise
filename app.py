@@ -548,7 +548,8 @@ if page == "📋 Planning de l'équipe":
                 rep = [0.6, 1.3, 3.5, 1.7, 0.9, 2.0, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
+            # --- CORRECTION DE L'ALIGNEMENT ET DU LOOK DU "ID / N°" ---
+            with cols_h[0]: st.markdown("<div class='header-mark'></div>ID", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("Mission (Cliquer)", unsafe_allow_html=True)
             with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
@@ -728,7 +729,8 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             rep_arch = [0.6, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
-            with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
+            # --- CORRECTION ICI AUSSI POUR L'ONGLET ARCHIVES ---
+            with cols_h[0]: st.markdown("<div class='header-mark'></div>ID", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("Mission", unsafe_allow_html=True)
             with cols_h[3]: st.markdown("Urgence", unsafe_allow_html=True)
