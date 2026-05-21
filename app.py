@@ -9,7 +9,7 @@ st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS CONSTRUITE POUR UN RENDU ULTRA-PROFESSIONNEL ---
+# --- INJECTION CSS AUTOMATIQUEMENT ADAPTATIVE (CLAIR / SOMBRE) ---
 st.markdown("""
 <style>
 /* Reset de visibilité de base */
@@ -18,36 +18,36 @@ st.markdown("""
 
 /* --- 💻 CONFIGURATION COMPORTEMENT PC (DESKTOP) --- */
 @media (min-width: 769px) {
-    /* Style unique pour la ligne d'en-tête */
+    /* Style unique pour la ligne d'en-tête (S'adapte au thème) */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-        background: #0f172a !important; /* Anthracite premium */
+        background: rgba(128, 128, 128, 0.12) !important; /* Effet translucide haut de gamme */
         border-radius: 8px !important;
-        padding: 14px 18px !important;
+        padding: 12px 18px !important;
         margin-bottom: 12px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+        border-bottom: 2px solid var(--primary-color) !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
-        color: #ffffff !important;
+        color: var(--text-color) !important;
         font-weight: 700 !important;
         font-size: 0.85rem !important;
         text-transform: uppercase !important;
         letter-spacing: 0.7px !important;
     }
 
-    /* Style unique pour les lignes de données (Card-Rows) */
+    /* Style unique pour les lignes de données (Card-Rows adaptatives) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
+        background: var(--secondary-background-color) !important; /* Couleur dynamique du thème */
+        border: 1px solid rgba(128, 128, 128, 0.15) !important;
         border-radius: 8px !important;
-        padding: 12px 18px !important;
+        padding: 10px 18px !important;
         margin-bottom: 8px !important;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04) !important;
-        align-items: center !important; /* Alignement vertical magique */
-        transition: transform 0.15s ease, border-color 0.15s ease !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        align-items: center !important; /* Alignement vertical parfait */
+        transition: all 0.15s ease !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.row-marker):hover {
-        border-color: #cbd5e1 !important;
-        background: #f8fafc !important;
+        border-color: var(--primary-color) !important;
+        background: rgba(128, 128, 128, 0.08) !important;
     }
 
     /* Normalisation des hauteurs d'éléments Streamlit internes */
@@ -58,9 +58,9 @@ st.markdown("""
 
     /* Design du bouton Mission cliquable sur PC */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
-        background: #eff6ff !important;
-        border: 1px solid #bfdbfe !important;
-        color: #1d4ed8 !important;
+        background: rgba(128, 128, 128, 0.05) !important;
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        color: var(--text-color) !important;
         border-radius: 6px !important;
         font-weight: 500 !important;
         font-size: 0.88rem !important;
@@ -69,8 +69,8 @@ st.markdown("""
         width: 100% !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button:hover {
-        background: #dbeafe !important;
-        color: #1e40af !important;
+        border-color: var(--primary-color) !important;
+        background: rgba(128, 128, 128, 0.1) !important;
     }
 }
 
@@ -84,14 +84,14 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Transformation des lignes en magnifiques fiches (Cards) */
+    /* Transformation des lignes en superbes fiches de tâches */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
+        background: var(--secondary-background-color) !important;
+        border: 1px solid rgba(128, 128, 128, 0.2) !important;
         border-radius: 14px !important;
-        padding: 18px !important;
-        margin-bottom: 16px !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01) !important;
+        padding: 16px !important;
+        margin-bottom: 14px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
         display: flex !important;
         flex-direction: column !important;
     }
@@ -107,9 +107,9 @@ st.markdown("""
     .mob-title {
         font-size: 1.05rem !important;
         font-weight: 800 !important;
-        color: #0f172a !important;
+        color: var(--text-color) !important;
         padding-bottom: 8px !important;
-        border-bottom: 2px solid #2563eb !important;
+        border-bottom: 2px solid var(--primary-color) !important;
         margin-bottom: 10px !important;
     }
     
@@ -119,7 +119,7 @@ st.markdown("""
         justify-content: space-between !important;
         align-items: center !important;
         padding: 8px 0 !important;
-        border-bottom: 1px solid #f1f5f9 !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
     }
     .mob-row:last-of-type {
         border-bottom: none !important;
@@ -127,14 +127,14 @@ st.markdown("""
     
     .mob-lbl {
         font-size: 0.78rem !important;
-        color: #64748b !important;
+        color: rgba(128, 128, 128, 0.6) !important;
         font-weight: 600 !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
     }
     .mob-val {
         font-size: 0.92rem !important;
-        color: #1e293b !important;
+        color: var(--text-color) !important;
         font-weight: 600 !important;
     }
 
@@ -378,7 +378,7 @@ with st.sidebar:
 
 
 # ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE (ESTHÉTIQUE SAAS PRO)
+# PAGE 1 : LE PLANNING DYNAMIQUE (THEME ADAPTATIVE)
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
@@ -472,7 +472,7 @@ if page == "📋 Planning de l'équipe":
                     st.markdown(f'<div class="pc-only" style="text-align: center;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with cols[5]:
-                    color = "#d97706" if "En cours" in statut else "#16a34a"
+                    color = "#f59e0b" if "En cours" in statut else "#10b981"
                     emoji = "🟡" if "En cours" in statut else "🟢"
                     st.markdown(f"""
                     <div class="pc-only" style="font-weight: bold; color: {color}; text-align: center;">{emoji} {statut}</div>
@@ -578,7 +578,7 @@ elif page == "💬 Zone Tchat":
 
 
 # ==========================================
-# 🗄️ PAGE 3 : ARCHIVES (BÉNÉFICIE DU MÊME NOUVEAU DESIGN)
+# 🗄️ PAGE 3 : ARCHIVES ADAPTATIVES
 # ==========================================
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
