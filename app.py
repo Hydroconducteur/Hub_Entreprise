@@ -446,7 +446,8 @@ with st.sidebar:
             with st.form("form_ajouter_employe", clear_on_submit=True):
                 st.caption("Ajouter un nouvel employé autorisé :")
                 nv_nom = st.text_input("Prénom").strip().capitalize()
-                nv_code = st.text_input("Code Secret d'accès", type="text", help="Ex: 4 chiffres")
+                # LE CORRECTIF CORRIGÉ ICI (Changement de type="text" vers type="default")
+                nv_code = st.text_input("Code Secret d'accès", type="default", help="Ex: 4 chiffres")
                 if st.form_submit_button("➕ Autoriser l'employé", use_container_width=True):
                     if nv_nom and nv_code:
                         cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES (?, ?)", (nv_nom, nv_code))
