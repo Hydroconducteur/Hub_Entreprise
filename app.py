@@ -16,6 +16,13 @@ st.markdown("""
 .mob-only { display: none; }
 .pc-only { display: block; }
 
+/* Force le centrage parfait de TOUS les boutons Streamlit dans leurs colonnes respectives */
+div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+}
+
 /* --- 💻 COMPORTEMENT GRAPHIQUE DESKTOP (PC) --- */
 @media (min-width: 769px) {
     /* En-tête du tableau style "Dashboard" */
@@ -71,7 +78,7 @@ st.markdown("""
         background: transparent !important;
         border: none !important;
         color: var(--text-color) !important;
-        text-align: center !important; /* Centré également pour s'aligner au titre */
+        text-align: center !important;
         padding: 0 !important;
         font-weight: 500 !important;
         font-size: 0.92rem !important;
@@ -508,7 +515,7 @@ if page == "📋 Planning de l'équipe":
                     st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with cols[2]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: 2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
                     limite_caracteres = 32
                     quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True):
