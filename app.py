@@ -5,147 +5,190 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Hub Entreprise", page_icon="📱", layout="wide")
+st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS AUTOMATIQUEMENT ADAPTATIVE (CLAIR / SOMBRE) ---
+# --- INJECTION CSS PREMIUM & ULTRA-ADAPTATIVE ---
 st.markdown("""
 <style>
-/* Reset de visibilité de base */
+/* Reset et utilitaires */
 .mob-only { display: none; }
 .pc-only { display: block; }
 
-/* --- 💻 CONFIGURATION COMPORTEMENT PC (DESKTOP) --- */
+/* --- 💻 COMPORTEMENT GRAPHIQUE DESKTOP (PC) --- */
 @media (min-width: 769px) {
-    /* Style unique pour la ligne d'en-tête (S'adapte au thème) */
+    /* En-tête du tableau style "Dashboard" */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-        background: rgba(128, 128, 128, 0.12) !important; /* Effet translucide haut de gamme */
-        border-radius: 8px !important;
-        padding: 12px 18px !important;
-        margin-bottom: 12px !important;
-        border-bottom: 2px solid var(--primary-color) !important;
+        background: rgba(128, 128, 128, 0.08) !important;
+        border-radius: 10px !important;
+        padding: 14px 20px !important;
+        margin-bottom: 16px !important;
+        border-bottom: 3px solid var(--primary-color) !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
         color: var(--text-color) !important;
         font-weight: 700 !important;
-        font-size: 0.85rem !important;
+        font-size: 0.82rem !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.7px !important;
+        letter-spacing: 1px !important;
+        opacity: 0.8;
     }
 
-    /* Style unique pour les lignes de données (Card-Rows adaptatives) */
+    /* Lignes de données dynamiques (Card-Rows) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: var(--secondary-background-color) !important; /* Couleur dynamique du thème */
+        background: var(--secondary-background-color) !important;
         border: 1px solid rgba(128, 128, 128, 0.15) !important;
-        border-radius: 8px !important;
-        padding: 10px 18px !important;
-        margin-bottom: 8px !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-        align-items: center !important; /* Alignement vertical parfait */
-        transition: all 0.15s ease !important;
+        border-radius: 10px !important;
+        padding: 12px 20px !important;
+        margin-bottom: 10px !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+        align-items: center !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
     }
+    
+    /* Effet de survol haut de gamme */
     div[data-testid="stHorizontalBlock"]:has(.row-marker):hover {
-        border-color: var(--primary-color) !important;
-        background: rgba(128, 128, 128, 0.08) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12) !important;
+        border-color: rgba(128, 128, 128, 0.3) !important;
     }
 
-    /* Normalisation des hauteurs d'éléments Streamlit internes */
+    /* Injection dynamique des bordures de Priorité à gauche */
+    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 5px solid #ef4444 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 5px solid #f97316 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 5px solid #10b981 !important; }
+
+    /* Nettoyage des marges par défaut de Streamlit */
     div[data-testid="stHorizontalBlock"] [data-testid="element-container"] {
         margin-bottom: 0 !important;
         margin-top: 0 !important;
     }
 
-    /* Design du bouton Mission cliquable sur PC */
+    /* Rendre le bouton de la Mission invisible graphiquement (Style simple texte cliquable) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
-        background: rgba(128, 128, 128, 0.05) !important;
-        border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        background: transparent !important;
+        border: none !important;
         color: var(--text-color) !important;
-        border-radius: 6px !important;
-        font-weight: 500 !important;
-        font-size: 0.88rem !important;
-        padding: 6px 14px !important;
         text-align: left !important;
-        width: 100% !important;
+        padding: 0 !important;
+        font-weight: 500 !important;
+        font-size: 0.92rem !important;
+        text-decoration: underline rgba(128, 128, 128, 0.2) !important;
+        width: auto !important;
     }
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button:hover {
-        border-color: var(--primary-color) !important;
-        background: rgba(128, 128, 128, 0.1) !important;
+        color: var(--primary-color) !important;
+        text-decoration: underline var(--primary-color) !important;
+        background: transparent !important;
+    }
+    
+    /* Amélioration visuelle des boutons d'action standards dans les lignes */
+    div[data-testid="stHorizontalBlock"]:has(.row-marker) button {
+        border-radius: 6px !important;
+        transition: all 0.2s !important;
     }
 }
 
-/* --- 📱 CONFIGURATION COMPORTEMENT MOBILE (SMARTPHONE) --- */
+/* --- 📱 COMPORTEMENT GRAPHIQUE MOBILE (SMARTPHONES) --- */
 @media (max-width: 768px) {
     .mob-only { display: block !important; }
     .pc-only { display: none !important; }
     
-    /* Masquer complètement les en-têtes PC */
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-        display: none !important;
-    }
+    div[data-testid="stHorizontalBlock"]:has(.header-mark) { display: none !important; }
     
-    /* Transformation des lignes en superbes fiches de tâches */
+    /* Fiches mobiles style cartes épurées */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
         background: var(--secondary-background-color) !important;
-        border: 1px solid rgba(128, 128, 128, 0.2) !important;
+        border: 1px solid rgba(128, 128, 128, 0.18) !important;
         border-radius: 14px !important;
         padding: 16px !important;
-        margin-bottom: 14px !important;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+        margin-bottom: 16px !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
         display: flex !important;
         flex-direction: column !important;
     }
     
-    /* Forcer les colonnes à occuper tout l'espace de la carte */
+    /* Bordures de priorité également visibles sur mobile à gauche */
+    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 6px solid #ef4444 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 6px solid #f97316 !important; }
+    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 6px solid #10b981 !important; }
+
     div[data-testid="stHorizontalBlock"]:has(.row-marker) > div[data-testid="column"] {
         width: 100% !important;
         display: block !important;
         margin: 0 !important;
     }
     
-    /* Titre principal de la fiche mobile */
     .mob-title {
-        font-size: 1.05rem !important;
-        font-weight: 800 !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
         color: var(--text-color) !important;
-        padding-bottom: 8px !important;
-        border-bottom: 2px solid var(--primary-color) !important;
-        margin-bottom: 10px !important;
+        padding-bottom: 6px !important;
+        margin-bottom: 12px !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.15) !important;
     }
     
-    /* Ligne d'information clé/valeur */
     .mob-row {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
         padding: 8px 0 !important;
-        border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.08) !important;
     }
-    .mob-row:last-of-type {
-        border-bottom: none !important;
-    }
+    .mob-row:last-of-type { border-bottom: none !important; }
     
     .mob-lbl {
-        font-size: 0.78rem !important;
+        font-size: 0.75rem !important;
         color: rgba(128, 128, 128, 0.6) !important;
-        font-weight: 600 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     .mob-val {
         font-size: 0.92rem !important;
         color: var(--text-color) !important;
-        font-weight: 600 !important;
+        font-weight: 600;
     }
 
-    /* Uniformisation des boutons d'actions en bas de carte mobile */
+    /* Bouton d'ouverture de texte sur Mobile */
+    div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
+        width: 100% !important;
+        text-align: center !important;
+        background: rgba(128, 128, 128, 0.08) !important;
+        border: 1px dashed rgba(128, 128, 128, 0.3) !important;
+        padding: 8px !important;
+        border-radius: 8px !important;
+        margin-top: 5px !important;
+    }
+
     div[data-testid="stHorizontalBlock"]:has(.row-marker) button {
         width: 100% !important;
         border-radius: 8px !important;
         padding: 10px !important;
         font-weight: 600 !important;
-        margin-top: 6px !important;
+        margin-top: 8px !important;
     }
+}
+
+/* --- BADGES DE STATUT STYLE CAPSULE (PILLS) --- */
+.status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-align: center;
+}
+.status-pending {
+    background: rgba(245, 158, 11, 0.12) !important;
+    color: #f59e0b !important;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.status-done {
+    background: rgba(16, 185, 129, 0.12) !important;
+    color: #10b981 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -378,13 +421,13 @@ with st.sidebar:
 
 
 # ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE (THEME ADAPTATIVE)
+# PAGE 1 : LE PLANNING DYNAMIQUE PREMIUM
 # ==========================================
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi des flux en temps réel. Cliquez sur l'intitulé d'une mission pour l'ouvrir.")
+    st.caption("Suivi des flux en temps réel. Cliquez sur le texte d'une mission pour l'ouvrir en grand.")
 
-    # FENÊTRE FOCUS
+    # FENÊTRE FOCUS DE DESCRIPTION
     if st.session_state.modal_mission:
         num_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
@@ -397,6 +440,7 @@ if page == "📋 Planning de l'équipe":
                 st.rerun()
         st.write("---")
 
+    # CREATION TACHE ADMIN
     if st.session_state.role == "Administrateur":
         with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
@@ -428,16 +472,16 @@ if page == "📋 Planning de l'équipe":
         
         if taches:
             if st.session_state.role == "Administrateur":
-                rep = [0.6, 1.2, 2.5, 1.8, 0.7, 2.4, 1.4, 0.6]
+                rep = [0.6, 1.2, 2.7, 1.8, 0.7, 2.2, 1.4, 0.6]
                 cols_h = st.columns(rep, vertical_alignment="center")
             else:
-                rep = [0.6, 1.3, 2.8, 1.9, 0.8, 2.6, 1.4]
+                rep = [0.6, 1.3, 3.0, 1.9, 0.8, 2.4, 1.4]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
             # Injection de la balise .header-mark pour le CSS Desktop
             with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("Assigné à")
-            with cols_h[2]: st.markdown("Mission")
+            with cols_h[2]: st.markdown("Mission (Cliquer)")
             with cols_h[3]: st.markdown("Urgence")
             with cols_h[4]: st.markdown("Temps")
             with cols_h[5]: st.markdown("Statut")
@@ -449,36 +493,40 @@ if page == "📋 Planning de l'équipe":
                 id_t, num, qui, quoi, temps, statut, priorite = t
                 if not priorite: priorite = "🟢 Pas très important"
                 
+                # Détection de l'urgence pour injecter la classe CSS correspondante
+                prio_class = "prio-low"
+                if "Important" in priorite: prio_class = "prio-med"
+                elif "urgent" in priorite.lower(): prio_class = "prio-high"
+                
                 cols = st.columns(rep, vertical_alignment="center")
                 
                 with cols[0]:
-                    st.markdown(f'<div class="row-marker"></div><div class="pc-only" style="text-align: center; font-weight: bold;">{num}</div><div class="mob-only mob-title">📋 Tâche N° {num}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; opacity:0.8;">{num}</div><div class="mob-only mob-title">📋 Tâche N° {num}</div>', unsafe_allow_html=True)
                 
                 with cols[1]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 500;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with cols[2]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 26
+                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: 2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
+                    limite_caracteres = 32
                     quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True):
                         st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
 
                 with cols[3]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only" style="text-align: center; font-size:0.9rem;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
                 
                 with cols[4]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight:500;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with cols[5]:
-                    color = "#f59e0b" if "En cours" in statut else "#10b981"
-                    emoji = "🟡" if "En cours" in statut else "🟢"
+                    status_class = "status-pending" if "En cours" in statut else "status-done"
                     st.markdown(f"""
-                    <div class="pc-only" style="font-weight: bold; color: {color}; text-align: center;">{emoji} {statut}</div>
+                    <div class="pc-only" style="text-align: center;"><span class="status-badge {status_class}">{statut}</span></div>
                     <div class="mob-only mob-row">
                         <span class="mob-lbl">⚡ Statut</span>
-                        <span class="mob-val" style="color: {color}; font-weight: bold;">{emoji} {statut}</span>
+                        <span class="status-badge {status_class}">{statut}</span>
                     </div>
                     """, unsafe_allow_html=True)
                     
@@ -491,7 +539,7 @@ if page == "📋 Planning de l'équipe":
                                 conn.commit()
                                 st.rerun()
                         else:
-                            st.markdown("<div class='pc-only' style='color: #cbd5e1; text-align: center;'>—</div>", unsafe_allow_html=True)
+                            st.markdown("<div class='pc-only' style='color: #cbd5e1; text-align: center; opacity:0.3;'>—</div>", unsafe_allow_html=True)
                     else:
                         if st.session_state.user == qui or st.session_state.role == "Administrateur":
                             if st.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
@@ -499,7 +547,7 @@ if page == "📋 Planning de l'équipe":
                                 conn.commit()
                                 st.rerun()
                         else:
-                            st.markdown("<div class='pc-only' style='color: #cbd5e1; text-align: center;'>—</div>", unsafe_allow_html=True)
+                            st.markdown("<div class='pc-only' style='color: #cbd5e1; text-align: center; opacity:0.3;'>—</div>", unsafe_allow_html=True)
                 
                 if st.session_state.role == "Administrateur":
                     with cols[7]:
@@ -609,7 +657,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
         taches_archived = cursor.fetchall()
         
         if taches_archived:
-            rep_arch = [0.6, 1.2, 2.5, 1.5, 0.8, 2.0, 1.4, 0.8]
+            rep_arch = [0.6, 1.2, 2.7, 1.5, 0.8, 2.0, 1.4, 0.8]
             cols_h = st.columns(rep_arch, vertical_alignment="center")
             
             with cols_h[0]: st.markdown("<div class='header-mark'></div>N°", unsafe_allow_html=True)
@@ -623,14 +671,19 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             
             for ta in taches_archived:
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
+                
+                prio_class = "prio-low"
+                if "Important" in priorite: prio_class = "prio-med"
+                elif "urgent" in priorite.lower(): prio_class = "prio-high"
+                
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                with c[0]: st.markdown(f'<div class="row-marker"></div><div class="pc-only" style="text-align: center; font-weight: bold;">{num}</div><div class="mob-only mob-title">🗄️ Archive N° {num}</div>', unsafe_allow_html=True)
+                with c[0]: st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; opacity:0.8;">{num}</div><div class="mob-only mob-title">🗄️ Archive N° {num}</div>', unsafe_allow_html=True)
                 with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with c[2]:
                     st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 24
+                    limite_caracteres = 26
                     quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
                         st.session_state.modal_mission = (num, qui, quoi)
@@ -638,8 +691,11 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
 
                 with c[3]: st.markdown(f'<div class="pc-only" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
                 with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
-                with c[5]: st.markdown(f'<div class="pc-only" style="font-weight: bold; text-align: center;">{statut}</div><div class="mob-only mob-row"><span class="mob-lbl">⚡ Statut</span><span class="mob-val">{statut}</span></div>', unsafe_allow_html=True)
-                with c[6]: st.markdown(f'<div class="pc-only" style="text-align: center; font-style: italic;">{date_arch}</div><div class="mob-only mob-row"><span class="mob-lbl">📅 Archivage</span><span class="mob-val">{date_arch}</span></div>', unsafe_allow_html=True)
+                
+                with c[5]: 
+                    st.markdown(f'<div class="pc-only" style="text-align: center;"><span class="status-badge status-done">Fait</span></div><div class="mob-only mob-row"><span class="mob-lbl">⚡ Statut</span><span class="status-badge status-done">Fait</span></div>', unsafe_allow_html=True)
+                
+                with c[6]: st.markdown(f'<div class="pc-only" style="text-align: center; font-style: italic; opacity:0.8;">{date_arch}</div><div class="mob-only mob-row"><span class="mob-lbl">📅 Archivage</span><span class="mob-val">{date_arch}</span></div>', unsafe_allow_html=True)
                 
                 with c[7]:
                     if st.button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
