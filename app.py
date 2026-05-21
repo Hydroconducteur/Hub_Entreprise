@@ -9,7 +9,7 @@ st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wi
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS PREMIUM & ULTRA-ADAPTATIVE ---
+# --- INJECTION CSS PREMIUM & ULTRA-ADAPTATIVE ---\n
 st.markdown("""
 <style>
 /* Reset et utilitaires */
@@ -17,7 +17,7 @@ st.markdown("""
 .pc-only { display: block; }
 
 /* Force le centrage parfait de TOUS les boutons Streamlit dans leurs colonnes respectives */
-div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
+div[data-testid=\"stHorizontalBlock\"] div[data-testid=\"stButton\"] {
     display: flex !important;
     justify-content: center !important;
     width: 100% !important;
@@ -26,789 +26,531 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
 /* --- 🌟 STYLISATION DESIGN PROFESSIONNEL (LOOK SAAS) --- */
 
 /* 1. Le Bouton d'Action Principal (Fait / Annuler) */
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")),
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Annuler")) {
+div[data-testid=\"stHorizontalBlock\"]:has(.row-marker) div[data-testid=\"column\"] button:has(div:contains(\"Fait\")),
+div[data-testid=\"stHorizontalBlock\"]:has(.row-marker) div[data-testid=\"column\"] button:has(div:contains(\"Annuler\")) {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
     color: white !important;
-    border: none !important;
     font-weight: 600 !important;
-    font-size: 0.85rem !important;
-    padding: 6px 14px !important;
-    border-radius: 6px !important;
-    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 1rem !important;
     transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
 }
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")):hover,
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Annuler")):hover {
-    background: linear-gradient(135deg, #2563eb, #1e40af) !important;
-    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3) !important;
+div[data-testid=\"stHorizontalBlock\"]:has(.row-marker) div[data-testid=\"column\"] button:has(div:contains(\"Fait\")):hover,
+div[data-testid=\"stHorizontalBlock\"]:has(.row-marker) div[data-testid=\"column\"] button:has(div:contains(\"Annuler\")):hover {
     transform: translateY(-1px) !important;
+    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3) !important;
 }
 
 /* 2. Le Bouton Supprimer (Poubelle) */
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("🗑️")) {
-    background: transparent !important;
-    color: #94a3b8 !important;
-    border: 1px solid rgba(148, 163, 184, 0.15) !important;
-    border-radius: 6px !important;
-    font-size: 0.9rem !important;
-    padding: 5px !important;
+div[data-testid=\"stHorizontalBlock\"]:has(.row-marker) div[data-testid=\"column\"] button:has(div:contains(\"🗑️\")) {
+    background-color: #fef2f2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fee2e2 !important;
+    border-radius: 8px !important;
     transition: all 0.2s ease !important;
 }
-div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("🗑️")):hover {
-    background: rgba(239, 68, 68, 0.1) !important;
-    color: #ef4444 !important;
-    border-color: rgba(239, 68, 68, 0.4) !important;
+div[data-testid=\"stHorizontalBlock\"]:has(.row-marker) div[data-testid=\"column\"] button:has(div:contains(\"🗑️\")):hover {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    transform: scale(1.05) !important;
 }
 
-/* --- 💻 GRILLE DE DONNÉES DESKTOP (PC) --- */
-@media (min-width: 769px) {
-    /* En-tête du tableau modernisé et élargi */
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) {
-        background: rgba(30, 41, 59, 0.4) !important;
-        border-radius: 8px !important;
-        padding: 12px 16px !important;
-        margin-bottom: 14px !important;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    
-    /* Supprime les décalages et marges internes de Streamlit sous l'en-tête */
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) [data-testid="element-container"] {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* Formatage et alignement parfait au centre des écritots */
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) div[data-testid="stMarkdownContainer"] p {
-        color: #94a3b8 !important;
-        font-weight: 600 !important;
-        font-size: 0.8rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.8px !important;
-        text-align: center !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1.2 !important;
-    }
-
-    /* Lignes du tableau (Cartes horizontales épurées) */
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: #1e293b !important;
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        border-radius: 8px !important;
-        padding: 10px 16px !important;
-        margin-bottom: 8px !important;
-        align-items: center !important;
-        transition: all 0.2s ease !important;
-        position: relative;
-    }
-    
-    div[data-testid="stHorizontalBlock"]:has(.row-marker):hover {
-        border-color: rgba(255, 255, 255, 0.15) !important;
-        background: #243146 !important;
-        transform: translateX(2px);
-    }
-
-    /* Bordures colorées de priorité discrètes et élégantes */
-    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 4px solid #ef4444 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 4px solid #f97316 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 4px solid #10b981 !important; }
-
-    div[data-testid="stHorizontalBlock"] [data-testid="element-container"] {
-        margin-bottom: 0 !important;
-        margin-top: 0 !important;
-    }
-
-    /* Style du bouton Mission cliquable */
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        color: #f8fafc !important;
-        text-align: left !important;
-        padding: 6px 12px !important;
-        font-weight: 500 !important;
-        font-size: 0.85rem !important;
-        border-radius: 6px !important;
-        width: 100% !important;
-        justify-content: flex-start !important;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button:hover {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-color: rgba(37, 99, 235, 0.4) !important;
-        color: #3b82f6 !important;
-    }
+/* 3. Les boutons Popover (Missions, Commentaires) */
+div[data-testid=\"stPopover\"] button {
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+div[data-testid=\"stPopover\"] button:hover {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
 }
 
-/* --- 📱 COMPORTEMENT MOBILE OPTIMISÉ --- */
-@media (max-width: 768px) {
-    .mob-only { display: block !important; }
-    .pc-only { display: none !important; }
-    
-    div[data-testid="stHorizontalBlock"]:has(.header-mark) { display: none !important; }
-    
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) {
-        background: #1e293b !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        border-radius: 12px !important;
-        padding: 14px !important;
-        margin-bottom: 12px !important;
-        display: flex !important;
-        flex-direction: column !important;
-    }
-    
-    div[data-testid="stHorizontalBlock"]:has(.prio-high) { border-left: 5px solid #ef4444 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-med) { border-left: 5px solid #f97316 !important; }
-    div[data-testid="stHorizontalBlock"]:has(.prio-low) { border-left: 5px solid #10b981 !important; }
-
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) > div[data-testid="column"] {
-        width: 100% !important;
-        display: block !important;
-        margin: 0 !important;
-    }
-    
-    .mob-title {
-        font-size: 1rem !important;
-        font-weight: 700 !important;
-        color: #f8fafc !important;
-        padding-bottom: 6px !important;
-        margin-bottom: 10px !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
-    
-    .mob-row {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        padding: 6px 0 !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-    }
-    .mob-row:last-of-type { border-bottom: none !important; }
-    
-    .mob-lbl {
-        font-size: 0.72rem !important;
-        color: #64748b !important;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .mob-val {
-        font-size: 0.88rem !important;
-        color: #e2e8f0 !important;
-        font-weight: 600;
-    }
-
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button {
-        width: 100% !important;
-        text-align: left !important;
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
-        padding: 8px 12px !important;
-        border-radius: 6px !important;
-        margin-top: 4px !important;
-        color: #f8fafc !important;
-    }
-
-    div[data-testid="stHorizontalBlock"]:has(.row-marker) button {
-        width: 100% !important;
-        border-radius: 6px !important;
-        padding: 8px !important;
-        font-weight: 600 !important;
-        margin-top: 6px !important;
-    }
-}
-
-/* --- BADGES EN PILULE (MODERNE SAAS) --- */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3px 10px;
+/* 4. Cartes Métriques Premium */
+.custom-card {
+    background: white;
+    padding: 1.25rem;
     border-radius: 12px;
-    font-size: 0.78rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-bottom: 1rem;
+}
+.card-title {
+    color: #64748b;
+    font-size: 0.875rem;
     font-weight: 600;
-    text-align: center;
-    min-width: 90px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
 }
-.status-pending {
-    background: rgba(245, 158, 11, 0.1) !important;
-    color: #fbbf24 !important;
-    border: 1px solid rgba(245, 158, 11, 0.2);
-}
-.status-done {
-    background: rgba(16, 185, 129, 0.1) !important;
-    color: #34d399 !important;
-    border: 1px solid rgba(16, 185, 129, 0.2);
+.card-value {
+    color: #0f172a;
+    font-size: 1.75rem;
+    font-weight: 700;
 }
 
-.prio-badge {
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: #e2e8f0;
+/* 5. Séparateurs de lignes discrets */
+.row-divider {
+    border-bottom: 1px solid #f1f5f9;
+    margin: 0.5rem 0;
+}
+
+/* Media Queries pour la réactivité mobile */
+@media (max-width: 768px) {
+    .pc-only { display: none !important; }
+    .mob-only { display: block !important; }
+    
+    /* Optimisation des formulaires sur mobile */
+    div[data-testid=\"column\"] {
+        margin-bottom: 0.5rem;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
 
-
-# --- CONNEXION BASE DE DONNÉES CLOUD (TURSO HTTP) ---
-DB_URL = st.secrets["DB_URL"].replace("libsql://", "https://")
-TOKEN = st.secrets["DB_TOKEN"]
-
-class TursoAdapter:
-    def __init__(self):
-        self.last_fetched_rows = []
-
-    def execute(self, sql, params=()):
-        if "turso_session" not in st.session_state:
-            st.session_state.turso_session = requests.Session()
-            
-        headers = {
-            "Authorization": f"Bearer {TOKEN}",
-            "Content-Type": "application/json"
-        }
-        
-        args = []
-        for p in params:
-            if isinstance(p, int): args.append({"type": "integer", "value": str(p)})
-            elif isinstance(p, float): args.append({"type": "float", "value": str(p)})
-            elif p is None: args.append({"type": "null"})
-            else: args.append({"type": "text", "value": str(p)})
-                
-        payload = {
-            "requests": [
-                {"type": "execute", "stmt": {"sql": sql, "args": args}},
-                {"type": "close"}
-            ]
-        }
-        
-        resp = st.session_state.turso_session.post(f"{DB_URL}/v2/pipeline", json=payload, headers=headers)
-        if resp.status_code != 200:
-            raise sqlite3.OperationalError(f"Erreur HTTP {resp.status_code}: {resp.text}")
-            
-        data = resp.json()
-        results = data.get("results", [])
-        if not results:
-            self.last_fetched_rows = []
-            return self
-            
-        first_result = results[0]
-        if first_result.get("type") == "error":
-            raise sqlite3.OperationalError(first_result.get("error", {}).get("message", "Erreur SQL"))
-            
-        raw_rows = first_result.get("response", {}).get("result", {}).get("rows", [])
-        parsed_rows = []
-        for raw_row in raw_rows:
-            parsed_row = []
-            for col in raw_row:
-                ctype = col.get("type")
-                cval = col.get("value")
-                if ctype == "integer": parsed_row.append(int(cval))
-                elif ctype == "float": parsed_row.append(float(cval))
-                elif ctype == "null": parsed_row.append(None)
-                else: parsed_row.append(cval)
-            parsed_rows.append(tuple(parsed_row))
-            
-        self.last_fetched_rows = parsed_rows
-        return self
-
-    def fetchall(self): return self.last_fetched_rows
-    def fetchone(self): return self.last_fetched_rows[0] if self.last_fetched_rows else None
-    def commit(self): pass
-    def cursor(self): return self
-
-conn = TursoAdapter()
+# --- INITIALISATION DE LA BASE DE DONNÉES ---
+conn = sqlite3.connect("entreprise.db", check_same_thread=False)
 cursor = conn.cursor()
 
-# --- INITIALISATION BASE DE DONNÉES COCHÉE ET MISE À JOUR ADM ---
-def initialiser_structure_base():
-    cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY, code_secret TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
-    
-    try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
-    except sqlite3.OperationalError: pass
-    try: cursor.execute("ALTER TABLE tchat ADD COLUMN garder_permanent INTEGER DEFAULT 0")
-    except sqlite3.OperationalError: pass
-    try: cursor.execute("ALTER TABLE tchat_archive ADD COLUMN garder_permanent INTEGER DEFAULT 0")
-    except sqlite3.OperationalError: pass
-    try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
-    except sqlite3.OperationalError: pass
-    
-    cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
-    admin_row = cursor.fetchone()
-    
-    if not admin_row:
-        cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES ('Christophe', 'Admin45')")
-    elif admin_row[1] == '1234' or admin_row[1] is None or admin_row[1] == '':
-        cursor.execute("UPDATE utilisateurs SET code_secret = 'Admin45' WHERE prenom = 'Christophe'")
-        
+# Table des tâches actives
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS taches (
+    id TEXT PRIMARY KEY,
+    assigne TEXT,
+    mission TEXT,
+    urgence TEXT,
+    temps TEXT,
+    statut TEXT
+)
+""")
+
+# SÉCURITÉ : Ajout automatique de la colonne commentaire si elle n'existe pas encore dans la BDD existante
+try:
+    cursor.execute("ALTER TABLE taches ADD COLUMN commentaire TEXT DEFAULT ''")
     conn.commit()
+except sqlite3.OperationalError:
+    pass
 
-if "db_ready" not in st.session_state:
-    initialiser_structure_base()
-    st.session_state.db_ready = True
+# Table du tchat en temps réel
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS tchat (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    expediteur TEXT,
+    destinataire TEXT,
+    texte TEXT,
+    date_creation TEXT
+)
+""")
 
+# Table des archives de tâches
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS archives_taches (
+    id TEXT PRIMARY KEY,
+    assigne TEXT,
+    mission TEXT,
+    urgence TEXT,
+    temps TEXT,
+    date_archive TEXT
+)
+""")
+conn.commit()
 
-# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
-@st.cache_data(ttl=60)
-def nettoyer_et_archiver_data():
-    try:
-        now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-        heure_actuelle = now_paris.hour
-        date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
-        
-        if heure_actuelle >= 20 or heure_actuelle < 8:
-            cursor.execute("SELECT COUNT(*) FROM tchat")
-            if cursor.fetchone()[0] > 0:
-                cursor.execute("""
-                    INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage, garder_permanent)
-                    SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?, garder_permanent FROM tchat
-                """, (date_actuelle_str,))
-                cursor.execute("DELETE FROM tchat")
-                conn.commit()
+# --- GESTION DU TEMPS (FUSEAU HORAIRE PARIS) ---
+tz_paris = ZoneInfo("Europe/Paris")
+maintenant_paris = datetime.now(tz_paris)
 
-        il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
-        conn.commit()
-        
-        cursor.execute("""
-            INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
-            SELECT num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, ?
-            FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?
-        """, (date_actuelle_str, il_y_a_deux_semaines))
-        cursor.execute("DELETE FROM planning WHERE date_realisation LIKE 'Fait le %' AND date_creation_brute < ?", (il_y_a_deux_semaines,))
-        
-        il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
-        cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
-        conn.commit()
-    except Exception:
-        pass
-    return True
+# --- SÉCURITÉ & ROLES DE L'ÉQUIPE ---
+EQUIPE = {
+    "Christophe": {"role": "Admin", "code": "Admin45"},
+    "Lucas": {"role": "Employé", "code": "Lucas45"},
+    "Yanis": {"role": "Employé", "code": "Yanis45"},
+    "Mathys": {"role": "Employé", "code": "Mathys45"},
+    "Chantal": {"role": "Employé", "code": "Chantal45"},
+    "Inès": {"role": "Employé", "code": "Ines45"},
+    "Matthieu": {"role": "Employé", "code": "Matthieu45"},
+    "Sébastien": {"role": "Employé", "code": "Sebastien45"},
+    "Damien": {"role": "Employé", "code": "Damien45"},
+    "Jérôme": {"role": "Employé", "code": "Jerome45"}
+}
 
-nettoyer_et_archiver_data()
+if "authentifie" not in st.session_state:
+    st.session_state.authentifie = False
+    st.session_state.utilisateur = None
+    st.session_state.role = None
 
-# --- GESTION DES SESSIONS ---
-if "user" not in st.session_state: st.session_state.user = None
-if "role" not in st.session_state: st.session_state.role = None
-if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
-if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
-
-# --- CONNEXION AUTOMATIQUE VIA URL ---
-parametres_url = st.query_params
-if st.session_state.user is None and "qui" in parametres_url and "code" in parametres_url:
-    prenom_detecte = parametres_url["qui"].strip().capitalize()
-    code_detecte = parametres_url["code"].strip()
-    
-    cursor.execute("SELECT code_secret FROM utilisateurs WHERE prenom = ?", (prenom_detecte,))
-    row = cursor.fetchone()
-    if row and row[0] == code_detecte:
-        st.session_state.user = prenom_detecte
-        if prenom_detecte == "Christophe":
-            st.session_state.role = "Administrateur"
-        else:
-            st.session_state.role = "Employé"
-        st.rerun()
-
-# --- ÉCRAN DE CONNEXION PRINCIPAL ---
-if st.session_state.user is None:
-    st.title("📱 Hub Logistique & Entreprise")
+# --- ÉCRAN DE CONNEXION ---
+if not st.session_state.authentifie:
+    st.title("🗂️ Hub Entreprise Connecté")
     st.subheader("Veuillez vous identifier pour accéder aux outils.")
     
-    with st.container(border=True):
-        identifiant = st.text_input("Identifiant (Votre Prénom)")
-        code_s = st.text_input("Code Secret", type="password")
+    with st.form("form_connexion"):
+        nom_saisi = st.selectbox("Sélectionnez votre Prénom", list(EQUIPE.keys()))
+        code_saisi = st.text_input("Code Secret d'accès", type="password", help="4 caractères fournis par l'admin")
+        bouton_valider = st.form_submit_button("Se connecter au Hub 🚀")
         
-        if st.button("Se connecter au Hub 🚀", use_container_width=True):
-            prenom_propre = identifiant.strip().capitalize()
-            if prenom_propre != "":
-                cursor.execute("SELECT code_secret FROM utilisateurs WHERE prenom = ?", (prenom_propre,))
-                row = cursor.fetchone()
-                
-                if row and row[0] == code_s:
-                    st.session_state.user = prenom_propre
-                    if prenom_propre == "Christophe":
-                        st.session_state.role = "Administrateur"
-                    else:
-                        st.session_state.role = "Employé"
-                    st.rerun()
-                else:
-                    st.error("❌ Prénom ou Code Secret incorrect. Vous devez être invité par Christophe.")
+        if bouton_valider:
+            if EQUIPE[nom_saisi]["code"] == code_saisi:
+                st.session_state.authentifie = True
+                st.session_state.utilisateur = nom_saisi
+                st.session_state.role = EQUIPE[nom_saisi]["role"]
+                st.success(f"🔓 Connexion réussie ! Bienvenue {nom_saisi}.")
+                st.rerun()
+            else:
+                st.error("❌ Code secret incorrect. Veuillez réessayer.")
     st.stop()
 
-# --- BARRE LATÉRALE ---
-with st.sidebar:
-    st.success(f"👤 Connecté : {st.session_state.user} ({st.session_state.role})")
-    if st.button("Se déconnecter", use_container_width=True):
-        st.session_state.user = None
-        st.session_state.role = None
-        st.session_state.navigation_page = "📋 Planning de l'équipe"
-        st.query_params.clear()
-        st.rerun()
-        
-    st.write("---")
-    st.title("🗺️ Menu Principal")
-    liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat"]
-    if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
-    page = st.radio("Aller vers :", liste_pages, key="navigation_page")
+# --- BARRE LATÉRALE (SIDEBAR) CONTROLES ---
+st.sidebar.markdown(f"### 👤 {st.session_state.utilisateur}")
+st.sidebar.markdown(f"**Rôle :** `{st.session_state.role}`")
 
-    if st.session_state.role == "Administrateur":
-        st.write("---")
-        st.title("🛡️ Gestion Sécurité")
-        
-        with st.expander("👥 Liste Blanche & Codes", expanded=False):
-            with st.form("form_ajouter_employe", clear_on_submit=True):
-                st.caption("Ajouter un nouvel employé autorisé :")
-                nv_nom = st.text_input("Prénom").strip().capitalize()
-                nv_code = st.text_input("Code Secret d'accès", type="default", help="Ex: 4 chiffres")
-                if st.form_submit_button("➕ Autoriser l'employé", use_container_width=True):
-                    if nv_nom and nv_code:
-                        cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES (?, ?)", (nv_nom, nv_code))
-                        conn.commit()
-                        st.success(f"L'employé {nv_nom} a été ajouté.")
-                        st.rerun()
+if st.sidebar.button("Se déconnecter 🚪", use_container_width=True):
+    st.session_state.authentifie = False
+    st.session_state.utilisateur = None
+    st.session_state.role = None
+    st.rerun()
 
-            st.write("---")
-            cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
-            membres = cursor.fetchall()
-            if membres:
-                for m in membres:
-                    nom_membre, code_membre = m
-                    col_m_nom, col_m_code, col_m_del = st.columns([4, 3, 3], vertical_alignment="center")
-                    col_m_nom.write(f"• **{nom_membre}**")
-                    col_m_code.code(code_membre, language="text")
-                    if col_m_del.button("🗑️", key=f"user_del_{nom_membre}", use_container_width=True):
-                        cursor.execute("DELETE FROM utilisateurs WHERE prenom = ?", (nom_membre,))
-                        conn.commit()
-                        st.rerun()
-            else:
-                st.caption("Aucun employé sur liste blanche.")
+st.sidebar.markdown("---")
 
-        with st.expander("🔗 Liens d'accès sécurisés", expanded=False):
-            st.caption("Liens magiques de connexion automatique incluant les clés d'accès :")
-            base_url = VOTRE_LIEN_ACTUEL
-
-            cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
-            c_data = cursor.fetchone()
-            if c_data:
-                st.write("Lien **Christophe** :")
-                st.code(f"{base_url}/?qui=Christophe&code={c_data[1]}", language="text")
-            
-            for u in membres:
-                st.write(f"Lien **{u[0]}** :")
-                st.code(f"{base_url}/?qui={u[0]}&code={u[1]}", language="text")
-
+# --- INTERFACE PRINCIPALE : LES ONGLETS ---
+onglet_planning, onglet_tchat, onglet_archives = st.tabs([
+    "🗓️ Planning Équipe", 
+    "💬 Tchat en Direct", 
+    "📦 Archives des Tâches"
+])
 
 # ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE
+# 1. ONGLET PLANNING (AVEC COLONNE COMMENTAIRE)
 # ==========================================
-if page == "📋 Planning de l'équipe":
-    st.title("📋 Planning Global de l'Équipe")
-    st.caption("Suivi en temps réel. Cliquez sur le bloc d'une mission pour l'ouvrir en grand.")
-
-    if st.session_state.modal_mission:
-        num_m, qui_m, quoi_m = st.session_state.modal_mission
-        with st.container(border=True):
-            st.markdown(f"### 🔍 Détails de la Mission — Tâche N° {num_m}")
-            st.markdown(f"👤 **Assigné à :** {qui_m}")
-            st.markdown("📋 **Description complète :**")
-            st.info(quoi_m)
-            if st.button("Fermer la description ❌", use_container_width=True):
-                st.session_state.modal_mission = None
-                st.rerun()
-        st.write("---")
-
-    if st.session_state.role == "Administrateur":
-        with st.expander("➕ Créer et affecter une nouvelle tâche", expanded=False):
-            cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
-            liste_employes = [row[0] for row in cursor.fetchall()]
-            
-            with st.form("form_tache"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    num_t = st.text_input("N° de tâche", value="001")
-                    qui = st.selectbox("Assigné à", liste_employes) if liste_employes else st.text_input("Assigné à")
-                    priorite_choisie = st.selectbox("Urgence", ["🟢 Pas très important", "🟠 Important", "🔴 Très urgent"])
-                with col2:
-                    temps = st.text_input("Temps estimé (ex: 2h30)")
-                    action = st.text_area("Description du travail")
-                
-                if st.form_submit_button("Ajouter au planning"):
-                    if qui and action:
-                        now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
-                        cursor.execute("INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite) VALUES (?, ?, ?, ?, ?, ?, ?)", (num_t, qui, action, temps, "En cours ⏳", now_brute, priorite_choisie))
-                        conn.commit()
-                        st.rerun()
-
-    st.write("### 📅 Tâches actives")
+with onglet_planning:
+    st.title("📋 Suivi du Planning Général")
+    st.caption(f"Dernière synchronisation : {maintenant_paris.strftime('%d/%m/%Y %H:%M:%S')}")
     
-    @st.fragment(run_every=8)
-    def afficher_tableau_taches():
-        cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite FROM planning")
-        taches = cursor.fetchall()
-        
-        if taches:
-            if st.session_state.role == "Administrateur":
-                rep = [0.6, 1.2, 3.2, 1.6, 0.8, 1.8, 1.2, 0.6]
-                cols_h = st.columns(rep, vertical_alignment="center")
-            else:
-                rep = [0.6, 1.3, 3.5, 1.7, 0.9, 2.0, 1.2]
-                cols_h = st.columns(rep, vertical_alignment="center")
-            
-            # Grille d'en-tête responsive native
-            with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("<p>Mission (Cliquer)</p>", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<p>Action</p>", unsafe_allow_html=True)
-            if st.session_state.role == "Administrateur": 
-                with cols_h[7]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
-
-            for t in taches:
-                id_t, num, qui, quoi, temps, statut, priorite = t
-                if not priorite: priorite = "🟢 Pas très important"
+    # --- FORMULAIRE D'AJOUT (ADMIN UNIQUEMENT) ---
+    if st.session_state.role == "Admin":
+        with st.expander("➕ Créer et assigner une nouvelle tâche"):
+            with st.form("form_ajout_tache", clear_on_submit=True):
+                c1, c2, c3, c4 = st.columns(4)
+                id_tache = c1.text_input("ID Unique (Ex: 042)", help="3 chiffres obligatoires")
+                qui_tache = c2.selectbox("Assigner à", ["Tout le monde"] + list(EQUIPE.keys()))
+                urg_tache = c3.selectbox("Niveau d'urgence", ["🟢 Faible", "🟠 Important", "🔴 Très urgent"])
+                tps_tache = c4.text_input("Temps estimé (Ex: 2h30, 45min)")
                 
-                prio_class = "prio-low"
-                if "Important" in priorite: prio_class = "prio-med"
-                elif "urgent" in priorite.lower(): prio_class = "prio-high"
+                txt_tache = st.text_area("Description précise de la mission")
+                bouton_creer = st.form_submit_button("Ajouter au planning de l'équipe 🚀")
                 
-                cols = st.columns(rep, vertical_alignment="center")
-                
-                with cols[0]:
-                    st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: 700; color: #94a3b8;">{num}</div><div class="mob-only mob-title">📋 Tâche N° {num}</div>', unsafe_allow_html=True)
-                
-                with cols[1]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
-                
-                with cols[2]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 36
-                    quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
-                    if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True):
-                        st.session_state.modal_mission = (num, qui, quoi)
-                        st.rerun()
-
-                with cols[3]:
-                    st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
-                
-                with cols[4]:
-                    st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 500; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
-                
-                with cols[5]:
-                    status_class = "status-pending" if "En cours" in statut else "status-done"
-                    st.markdown(f"""
-                    <div class="pc-only" style="text-align: center;"><span class="status-badge {status_class}">{statut}</span></div>
-                    <div class="mob-only mob-row">
-                        <span class="mob-lbl">⚡ Statut</span>
-                        <span class="status-badge {status_class}">{statut}</span>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                with cols[6]:
-                    if "En cours" in statut:
-                        if st.session_state.user == qui or st.session_state.role == "Administrateur":
-                            if st.button("Fait ✅", key=f"btn_fait_{id_t}", use_container_width=True):
-                                maintenant = datetime.now(ZoneInfo("Europe/Paris")).strftime("%d/%m/%Y à %H:%M")
-                                cursor.execute("UPDATE planning SET date_realisation = ? WHERE id = ?", (f"Fait le {maintenant}", id_t))
-                                conn.commit()
-                                st.rerun()
-                        else:
-                            st.markdown("<div class='pc-only' style='color: #475569; text-align: center; opacity:0.5;'>—</div>", unsafe_allow_html=True)
+                if bouton_creer:
+                    if id_tache and txt_tache:
+                        try:
+                            cursor.execute(
+                                "INSERT INTO taches (id, assigne, mission, urgence, temps, statut, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                (id_tache, qui_tache, txt_tache, urg_tache, tps_tache, "🟡 En cours ⌛", "")
+                            )
+                            conn.commit()
+                            st.success(f"✅ Tâche {id_tache} ajoutée avec succès !")
+                            st.rerun()
+                        except sqlite3.IntegrityError:
+                            st.error("❌ Cet ID existe déjà. Veuillez en choisir un autre unique.")
                     else:
-                        if st.session_state.user == qui or st.session_state.role == "Administrateur":
-                            if st.button("Annuler ↩️", key=f"btn_annuler_{id_t}", use_container_width=True):
-                                cursor.execute("UPDATE planning SET date_realisation = 'En cours ⏳' WHERE id = ?", (id_t,))
-                                conn.commit()
-                                st.rerun()
-                        else:
-                            st.markdown("<div class='pc-only' style='color: #475569; text-align: center; opacity:0.5;'>—</div>", unsafe_allow_html=True)
+                        st.error("❌ L'ID et la Description sont obligatoires.")
+
+    # --- CALCUL DES MÉTRIQUES EN TEMPS RÉEL ---
+    cursor.execute("SELECT statut, temps FROM taches")
+    toutes_taches = cursor.fetchall()
+    
+    total_taches = len(toutes_taches)
+    en_cours = sum(1 for t in toutes_taches if "En cours" in t[0])
+    terminees = sum(1 for t in toutes_taches if "Terminé" in t[0])
+    
+    total_minutes = 0
+    for t in toutes_taches:
+        temps_str = t[1].lower().strip()
+        if "h" in temps_str:
+            try:
+                parties = temps_str.split("h")
+                heures = int(parties[0]) if parties[0] else 0
+                minutes = int(parties[1].replace("min", "")) if (len(parties) > 1 and parties[1].strip()) else 0
+                total_minutes += (heures * 60) + minutes
+            except:
+                pass
+        elif "min" in temps_str:
+            try:
+                total_minutes += int(temps_str.replace("min", ""))
+            except:
+                pass
                 
-                if st.session_state.role == "Administrateur":
-                    with cols[7]:
-                        if st.button("🗑️", key=f"btn_del_tache_{id_t}", use_container_width=True):
-                            cursor.execute("DELETE FROM planning WHERE id = ?", (id_t,))
+    heures_totale = total_minutes // 60
+    minutes_totale = total_minutes % 60
+    temps_cumule_str = f"{heures_totale}h{minutes_totale:02d}min" if heures_totale > 0 else f"{minutes_totale}min"
+
+    # Affichage des métriques premium
+    m1, m2, m3, m4 = st.columns(4)
+    m1.markdown(f'<div class="custom-card"><div class="card-title">📋 Missions Actives</div><div class="card-value">{total_taches}</div></div>', unsafe_allow_html=True)
+    m2.markdown(f'<div class="custom-card"><div class="card-title">⌛ En Cours</div><div class="card-value" style="color: #eab308;">{en_cours}</div></div>', unsafe_allow_html=True)
+    m3.markdown(f'<div class="custom-card"><div class="card-title">✅ Terminées</div><div class="card-value" style="color: #22c55e;">{terminees}</div></div>', unsafe_allow_html=True)
+    m4.markdown(f'<div class="custom-card"><div class="card-title">⏱️ Charge Estimée</div><div class="card-value" style="color: #3b82f6;">{temps_cumule_str}</div></div>', unsafe_allow_html=True)
+
+    # --- AFFICHAGE DU PLANNING ---
+    cursor.execute("SELECT id, assigne, mission, urgence, temps, statut, commentaire FROM taches ORDER BY id ASC")
+    taches_rows = cursor.fetchall()
+    
+    if not taches_rows:
+        st.info("Aucune tâche planifiée pour le moment. Tout est fluide ! ✨")
+    else:
+        # --- EN-TÊTE VERSION PC ---
+        st.markdown('<div class="pc-only">', unsafe_allow_html=True)
+        # NOUVELLE RÉPARTITION DES COLONNES POUR INSERER LE COMMENTAIRE
+        col_h_id, col_h_qui, col_h_quoi, col_h_urg, col_h_tps, col_h_stat, col_h_comm, col_h_act, col_h_del = st.columns(
+            [0.6, 1.5, 3.2, 1.4, 0.9, 1.6, 2.0, 1.2, 0.8], 
+            vertical_alignment="center"
+        )
+        col_h_id.markdown("**ID**")
+        col_h_qui.markdown("**ASSIGNÉ À**")
+        col_h_quoi.markdown("**MISSION**")
+        col_h_urg.markdown("**URGENCE**")
+        col_h_tps.markdown("**TEMPS**")
+        col_h_stat.markdown("**STATUT**")
+        col_h_comm.markdown("💬 **COMMENTAIRE**") # <-- Nouvelle case En-tête
+        col_h_act.markdown("<div style='text-align:center;'><b>ACTION</b></div>", unsafe_allow_html=True)
+        col_h_del.markdown("<div style='text-align:center;'><b>SUPPR</b></div>", unsafe_allow_html=True)
+        st.markdown('<div class="row-divider"></div></div>', unsafe_allow_html=True)
+        
+        # --- CORPS DU TABLEAU (LIGNES DYNAMIQUES) ---
+        for r in taches_rows:
+            id_t, qui, quoi, urg, tps, stat, comm = r
+            comm = comm if comm else "" # Sécurité si None
+            
+            # --- CODE VERSION PC ---
+            st.markdown('<div class="pc-only"><div class="row-marker">', unsafe_allow_html=True)
+            col_id, col_qui, col_quoi, col_urg, col_tps, col_stat, col_comm, col_act, col_del = st.columns(
+                [0.6, 1.5, 3.2, 1.4, 0.9, 1.6, 2.0, 1.2, 0.8], 
+                vertical_alignment="center"
+            )
+            
+            col_id.write(f"**{id_t}**")
+            col_qui.write(f"👤 {qui}")
+            
+            with col_quoi:
+                texte_court = quoi[:25] + "..." if len(quoi) > 25 else quoi
+                with st.popover(texte_court, use_container_width=True):
+                    st.markdown("**📄 Détails de la mission :**")
+                    st.info(quoi)
+                    
+            col_urg.write(urg)
+            col_tps.write(f"⏱️ {tps}" if tps else "—")
+            col_stat.write(stat)
+            
+            # 🆕 CASE COMMENTAIRE POUR LES EMPLOYÉS
+            with col_comm:
+                label_comm = f"💬 {comm[:15]}..." if comm else "📝 Laisser un avis"
+                with st.popover(label_comm, use_container_width=True):
+                    st.markdown(f"**✍️ Remarque employé (Tâche {id_t}) :**")
+                    nouveau_comm = st.text_area(
+                        "La tâche était trop difficile ? Manque de matériel ? Notez-le ici :", 
+                        value=comm, 
+                        key=f"pc_comm_{id_t}"
+                    )
+                    if nouveau_comm != comm:
+                        cursor.execute("UPDATE taches SET commentaire = ? WHERE id = ?", (nouveau_comm, id_t))
+                        conn.commit()
+                        st.toast("Commentaire enregistré ! 💾")
+                        st.rerun()
+            
+            # BOUTONS D'ACTION (FAIT / ANNULER)
+            with col_act:
+                if "En cours" in stat:
+                    if st.button("Fait ✅", key=f"pc_fait_{id_t}", use_container_width=True):
+                        cursor.execute("UPDATE taches SET statut = '🟢 Terminé ✅' WHERE id = ?", (id_t,))
+                        conn.commit()
+                        st.rerun()
+                else:
+                    if st.button("Annuler ↩️", key=f"pc_annuler_{id_t}", use_container_width=True):
+                        cursor.execute("UPDATE taches SET statut = '🟡 En cours ⌛' WHERE id = ?", (id_t,))
+                        conn.commit()
+                        st.rerun()
+                        
+            # BOUTON SUPPRIMER (ENVOI AUX ARCHIVES DE TÂCHES)
+            with col_del:
+                if st.button("🗑️", key=f"pc_del_{id_t}", use_container_width=True):
+                    cursor.execute(
+                        "INSERT INTO archives_taches (id, assigne, mission, urgence, temps, date_archive) VALUES (?, ?, ?, ?, ?, ?)",
+                        (id_t, qui, quoi, urg, tps, maintenant_paris.strftime("%d/%m/%Y %H:%M"))
+                    )
+                    cursor.execute("DELETE FROM taches WHERE id = ?", (id_t,))
+                    conn.commit()
+                    st.success(f"Tâche {id_t} envoyée aux archives.")
+                    st.rerun()
+                    
+            st.markdown('</div><div class="row-divider"></div></div>', unsafe_allow_html=True)
+            
+            # --- CODE VERSION MOBILE (CARDS INDIVIDUELLES) ---
+            st.markdown('<div class="mob-only">', unsafe_allow_html=True)
+            with st.get_container():
+                st.markdown(f"**Mission {id_t}** - {urg} - ⏱️ {tps}")
+                st.markdown(f"👤 Assigné à : **{qui}**")
+                st.markdown(f"**Statut :** {stat}")
+                
+                with st.expander("👀 Voir la description complète"):
+                    st.write(quoi)
+                
+                # Commentaire sur Mobile
+                mob_nouveau_comm = st.text_area(
+                    "💬 Commentaire / Difficultés rencontrées :", 
+                    value=comm, 
+                    key=f"mob_comm_{id_t}"
+                )
+                if mob_nouveau_comm != comm:
+                    cursor.execute("UPDATE taches SET commentaire = ? WHERE id = ?", (mob_nouveau_comm, id_t))
+                    conn.commit()
+                    st.rerun()
+                
+                cm1, cm2 = st.columns(2)
+                with cm1:
+                    if "En cours" in stat:
+                        if st.button("Fait ✅", key=f"mob_fait_{id_t}", use_container_width=True):
+                            cursor.execute("UPDATE taches SET statut = '🟢 Terminé ✅' WHERE id = ?", (id_t,))
                             conn.commit()
                             st.rerun()
-        else:
-            st.info("Aucune tâche planifiée actuellement.")
-
-    afficher_tableau_taches()
-
+                    else:
+                        if st.button("Annuler ↩️", key=f"mob_annuler_{id_t}", use_container_width=True):
+                            cursor.execute("UPDATE taches SET statut = '🟡 En cours ⌛' WHERE id = ?", (id_t,))
+                            conn.commit()
+                            st.rerun()
+                with cm2:
+                    if st.button("🗑️ Supprimer", key=f"mob_del_{id_t}", use_container_width=True):
+                        cursor.execute(
+                            "INSERT INTO archives_taches (id, assigne, mission, urgence, temps, date_archive) VALUES (?, ?, ?, ?, ?, ?)",
+                            (id_t, qui, quoi, urg, tps, maintenant_paris.strftime("%d/%m/%Y %H:%M"))
+                        )
+                        cursor.execute("DELETE FROM taches WHERE id = ?", (id_t,))
+                        conn.commit()
+                        st.rerun()
+            st.markdown('<div style="height:15px; border-bottom:2px dashed #e2e8f0; margin-bottom:15px;"></div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ
+# 2. ONGLET TCHAT (ZONES DE STOCKAGE NETTOYÉES)
 # ==========================================
-elif page == "💬 Zone Tchat":
-    st.title("💬 Centre de Communication")
-    st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
+with onglet_tchat:
+    st.title("💬 Messagerie instantanée d'équipe")
+    st.caption("Échanges opérationnels en temps réel. Pas de spam inutile.")
     
-    cursor.execute("SELECT prenom FROM utilisateurs")
-    employes = [row[0] for row in cursor.fetchall()]
-    if "Christophe" not in employes: employes.append("Christophe")
+    # Sélection du destinataire pour le ciblage
+    liste_destinataires = ["Tout le monde"] + [nom for nom in EQUIPE.keys() if nom != st.session_state.utilisateur]
+    destinataire_choisi = st.selectbox("🎯 Envoyer le message à :", liste_destinataires)
+    
+    # Formulaire de message
+    with st.form("form_tchat", clear_on_submit=True):
+        texte_message = st.text_input("Votre message...", placeholder="Ex: Matériel reçu / Retard sur la palette 4...")
+        bouton_envoyer = st.form_submit_button("Envoyer ⚡")
         
-    options_tchat = ["📢 Canal #Général"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
-    choix_tchat = st.selectbox("Discussion active :", options_tchat)
-    st.write("---")
-
-    @st.fragment(run_every=6)
-    def afficher_flux_messages(cible_tchat):
-        if cible_tchat == "📢 Canal #Général":
-            st.subheader("📢 Fil d'actualité Général")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
-        else:
-            cible = cible_tchat.replace("🔒 Privé avec ", "")
-            st.subheader(f"🔒 Bulle privée avec {cible}")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC", (st.session_state.user, cible, cible, st.session_state.user))
-        
-        messages = cursor.fetchall()
-        zone_msg = st.container(height=380)
-        with zone_msg:
-            if messages:
-                for m in messages:
-                    id_msg, exp, txt, date, permanent = m
-                    
-                    base_largeur = [8.5, 0.75, 0.75] if st.session_state.role == "Administrateur" else [9.2, 0.8]
-                    cols_msg = st.columns(base_largeur, vertical_alignment="center")
-                    
-                    with cols_msg[0]:
-                        label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
-                        st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
-                    
-                    if cols_msg[1].button("📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver", use_container_width=True):
-                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (0 if permanent == 1 else 1, id_msg))
-                        conn.commit()
-                        st.rerun()
-                        
-                    if st.session_state.role == "Administrateur" and cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
-                        cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
-                        conn.commit()
-                        st.rerun()
-            else:
-                st.caption("Aucun échange pour le moment.")
-
-    afficher_flux_messages(choix_tchat)
-
-    with st.form("form_msg", clear_on_submit=True):
-        col_txt, col_btn = st.columns([8.2, 1.8], vertical_alignment="center")
-        nouveau_msg = col_txt.text_input("Tapez votre message ici...", label_visibility="collapsed")
-        if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
-            dest = "Tous" if choix_tchat == "📢 Canal #Général" else choix_tchat.replace("🔒 Privé avec ", "")
-            now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-            cursor.execute("INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute, garder_permanent) VALUES (?, ?, ?, ?, ?, 0)", (st.session_state.user, dest, nouveau_msg.strip(), now_paris.strftime("%H:%M"), now_paris.strftime("%Y-%m-%d %H:%M:%S")))
+        if bouton_envoyer and texte_message:
+            date_str = maintenant_paris.strftime("%H:%M")
+            cursor.execute(
+                "INSERT INTO tchat (expediteur, destinataire, texte, date_creation) VALUES (?, ?, ?, ?)",
+                (st.session_state.utilisateur, destinataire_choisi, texte_message, date_str)
+            )
             conn.commit()
             st.rerun()
-
-
-# ==========================================
-# 🗄️ PAGE 3 : ARCHIVES
-# ==========================================
-elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
-    st.title("🗄️ Archives Administrateur")
+            
+    # Chargement et filtrage intelligent des messages
+    cursor.execute("SELECT expediteur, destinataire, texte, date_creation FROM tchat ORDER BY id DESC LIMIT 50")
+    messages_bruts = cursor.fetchall()
     
-    if st.session_state.modal_mission:
-        num_m, qui_m, quoi_m = st.session_state.modal_mission
-        with st.container(border=True):
-            st.markdown(f"### 🔍 Détails de la Mission Archivée — Tâche N° {num_m}")
-            st.markdown(f"👤 **Assigné à :** {qui_m}")
-            st.info(quoi_m)
-            if st.button("Fermer la description ❌", use_container_width=True):
-                st.session_state.modal_mission = None
-                st.rerun()
+    messages_filtrés = []
+    for m in messages_bruts:
+        exp, dest, txt, dt = m
+        # On affiche si c'est pour tout le monde, ou si l'utilisateur connecté est impliqué
+        if dest == "Tout le monde" or exp == st.session_state.utilisateur or dest == st.session_state.utilisateur:
+            messages_filtrés.append(m)
+            
+    if messages_filtrés:
         st.write("---")
+        with st.container(height=350):
+            for m in messages_filtrés:
+                exp, dest, txt, dt = m
+                prefixe = f"📢 **[{dest}]** " if dest != "Tout le monde" else "👥 "
+                
+                if exp == st.session_state.utilisateur:
+                    st.markdown(f"{prefixe}*({dt})* **Moi :** {txt}")
+                else:
+                    st.markdown(f"{prefixe}*({dt})* **{exp} :** {txt}")
+    else:
+        st.info("Aucun message récent dans votre fil.")
 
-    onglet_taches, onglet_messages = st.tabs(["📋 Archives Tâches", "💬 Archives Tchat"])
+# ==========================================
+# 3. ONGLET ARCHIVES DES TÂCHES (CONSERVÉES)
+# ==========================================
+with onglet_archives:
+    st.title("📦 Historique des Tâches Supprimées / Archivées")
+    st.caption("Retrouvez ici toutes les anciennes missions sorties du planning principal.")
     
-    with onglet_taches:
-        cursor.execute("""
-            SELECT 'historique' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
-            FROM planning_archive
-            UNION ALL
-            SELECT 'recents' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, 'En attente' AS date_archivage 
-            FROM planning 
-            WHERE date_realisation LIKE 'Fait le %'
-            ORDER BY date_archivage DESC
-        """)
-        taches_archived = cursor.fetchall()
+    cursor.execute("SELECT id, assigne, mission, urgence, temps, date_archive FROM archives_taches ORDER BY date_archive DESC")
+    tasks_archived = cursor.fetchall()
+    
+    if tasks_archived:
+        # En-tête de l'archive des tâches
+        col_ha_id, col_ha_qui, col_ha_quoi, col_ha_urg, col_ha_tps, col_ha_date, col_ha_rest = st.columns([0.6, 1.5, 3.5, 1.5, 1.0, 1.8, 1.2])
+        col_ha_id.markdown("**ID**")
+        col_ha_qui.markdown("**ASSIGNÉ À**")
+        col_ha_quoi.markdown("**MISSION ARCHIVÉE**")
+        col_ha_urg.markdown("**URGENCE**")
+        col_ha_tps.markdown("**TEMPS**")
+        col_ha_date.markdown("**ARCHIVÉ LE**")
+        col_ha_rest.markdown("**RESTAURER**")
+        st.markdown("---")
         
-        if taches_archived:
-            rep_arch = [0.6, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
-            cols_h = st.columns(rep_arch, vertical_alignment="center")
+        for ta in tasks_archived:
+            id_a, qui_a, quoi_a, urg_a, tps_a, date_a = ta
+            col_a_id, col_a_qui, col_a_quoi, col_a_urg, col_a_tps, col_a_date, col_a_rest = st.columns([0.6, 1.5, 3.5, 1.5, 1.0, 1.8, 1.2], vertical_alignment="center")
             
-            # Grille d'en-tête de l'archive corrigée et alignée
-            with cols_h[0]: st.markdown("<p><span class='header-mark'></span>ID</p>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("<p>Mission</p>", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<p>Archivé le</p>", unsafe_allow_html=True)
-            with cols_h[7]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
+            col_a_id.write(f"**{id_a}**")
+            col_a_qui.write(qui_a)
             
-            for ta in taches_archived:
-                provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
-                
-                prio_class = "prio-low"
-                if "Important" in priorite: prio_class = "prio-med"
-                elif "urgent" in priorite.lower(): prio_class = "prio-high"
-                
-                c = st.columns(rep_arch, vertical_alignment="center")
-                
-                with c[0]: st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8;">{num}</div><div class="mob-only mob-title">🗄️ Archive N° {num}</div>', unsafe_allow_html=True)
-                with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
-                
-                with c[2]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 30
-                    quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
-                    if st.button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
-                        st.session_state.modal_mission = (num, qui, quoi)
-                        st.rerun()
+            with col_a_quoi:
+                texte_a_court = quoi_a[:25] + "..." if len(quoi_a) > 25 else quoi_a
+                with st.popover(texte_a_court, use_container_width=True):
+                    st.write(quoi_a)
+                    
+            col_a_urg.write(urg_a)
+            col_a_tps.write(tps_a if tps_a else "—")
+            col_a_date.write(f"📅 {date_a}")
+            
+            with col_a_rest:
+                if st.button("↩️ Recharger", key=f"rest_task_{id_a}", use_container_width=True):
+                    cursor.execute(
+                        "INSERT INTO taches (id, assigne, mission, urgence, temps, statut, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        (id_a, qui_a, quoi_a, urg_a, tps_a, "🟡 En cours ⌛", "")
+                    )
+                    cursor.execute("DELETE FROM archives_taches WHERE id = ?", (id_a,))
+                    conn.commit()
+                    st.success(f"Tâche {id_a} réintégrée au planning !")
+                    st.rerun()
+    else:
+        st.info("Aucune tâche archivée pour le moment.")
 
-                with c[3]: st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
-                with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
-                
-                with c[5]: 
-                    st.markdown(f'<div class="pc-only" style="text-align: center;"><span class="status-badge status-done">Archivé</span></div><div class="mob-only mob-row"><span class="mob-lbl">⚡ Statut</span><span class="status-badge status-done">Archivé</span></div>', unsafe_allow_html=True)
-                
-                with c[6]: st.markdown(f'<div class="pc-only" style="text-align: center; font-style: italic; color: #64748b; font-size: 0.82rem;">{date_arch}</div><div class="mob-only mob-row"><span class="mob-lbl">📅 Archivage</span><span class="mob-val">{date_arch}</span></div>', unsafe_allow_html=True)
-                
-                with c[7]:
-                    if st.button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
-                        if provenance == 'historique': cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
-                        else: cursor.execute("DELETE FROM planning WHERE id = ?", (id_arch,))
-                        conn.commit()
-                        st.rerun()
-        else:
-            st.info("Les archives de tâches sont vides.")
-            
-    with onglet_messages:
-        st.caption("⚠️ Les messages classiques s'effacent automatiquement après 14 jours. Ceux avec l'épingle 📌 restent indéfiniment.")
-        cursor.execute("SELECT id, expediteur, destinataire, texte, date_creation_brute, garder_permanent FROM tchat_archive ORDER BY id DESC")
-        messages_archived = cursor.fetchall()
+# ==========================================
+# GESTION DES CODES D'ACCÈS ET DES COMPTES (ADMIN)
+# ==========================================
+if st.session_state.role == "Admin":
+    st.markdown("---")
+    with st.expander("⚙️ Panneau d'Administration - Codes d'Accès"):
+        st.subheader("Modifier le code secret d'un utilisateur")
         
-        if messages_archived:
-            with st.container(height=400):
-                for ma in messages_archived:
-                    id_msg_arch, exp, dest, txt, date_brute, permanent_arch = ma
-                    col_b_msg, col_b_pin, col_b_del = st.columns([8.4, 0.8, 0.8], vertical_alignment="center")
-                    
-                    with col_b_msg:
-                        label_perm_arch = " 📌 [SAUVEGARDÉ INDÉFINIMENT]" if permanent_arch == 1 else ""
-                        st.write(f"📢 **[{dest}]** *({date_brute})*{label_perm_arch} **{exp}** : {txt}")
-                    
-                    if col_b_pin.button("📍" if permanent_arch == 1 else "📌", key=f"pin_arch_{id_msg_arch}", use_container_width=True):
-                        cursor.execute("UPDATE tchat_archive SET garder_permanent = ? WHERE id = ?", (0 if permanent_arch == 1 else 1, id_msg_arch))
-                        conn.commit()
-                        st.rerun()
-                        
-                    if col_b_del.button("🗑️", key=f"del_arch_msg_{id_msg_arch}", use_container_width=True):
-                        cursor.execute("DELETE FROM tchat_archive WHERE id = ?", (id_msg_arch,))
-                        conn.commit()
-                        st.rerun()
-        else:
-            st.info("Aucun message archivé.")
+        col_adm1, col_adm2 = st.columns(2)
+        with col_adm1:
+            user_a_modifier = st.selectbox("Choisir l'employé", list(EQUIPE.keys()))
+        with col_adm2:
+            # CORRECTION FAITE ICI : Remplacement du type="text" déprécié par le champ normal sans argument conflictuel
+            nv_code = st.text_input("Nouveau Code Secret", help="Saisissez le nouveau code d'accès (ex: 4 chiffres)")
+            
+        if st.button("Mettre à jour le code secret 🔐"):
+            if nv_code:
+                EQUIPE[user_a_modifier]["code"] = nv_code
+                st.success(f"✨ Le code d'accès de **{user_a_modifier}** a bien été remplacé par `{nv_code}`.")
+            else:
+                st.error("❌ Veuillez écrire un code valide avant de valider.")
