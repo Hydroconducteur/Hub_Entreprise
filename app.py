@@ -552,7 +552,8 @@ if page == "📋 Planning de l'équipe":
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
             liste_employes = [row[0] for row in cursor.fetchall()]
             
-            with st.form("form_tache"):
+            # ✅ CHANGEMENT : ajout de clear_on_submit=True pour vider la case temps et description après envoi
+            with st.form("form_tache", clear_on_submit=True):
                 col1, col2 = st.columns(2)
                 with col1:
                     qui = st.selectbox("Assigné à", liste_employes) if liste_employes else st.text_input("Assigné à")
@@ -566,7 +567,6 @@ if page == "📋 Planning de l'équipe":
                         now_paris = datetime.now(ZoneInfo("Europe/Paris"))
                         now_brute = now_paris.strftime("%Y-%m-%d %H:%M:%S")
                         
-                        # Note: La colonne num_tache n'est plus utile, on insère la date brute qui servira à l'affichage
                         cursor.execute("INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", ("", qui, action, temps, "En cours ⏳", now_brute, priorite_choisie, ""))
                         conn.commit()
                         st.rerun()
@@ -579,7 +579,6 @@ if page == "📋 Planning de l'équipe":
 
     @st.fragment(run_every=8)
     def afficher_tableau_taches(filtre):
-        # 🟢 LECTURE DIRECTE DE LA DATE DE CRÉATION POUR REMPLACER L'ANCIEN ID
         query = "SELECT id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, commentaire FROM planning"
         
         if filtre == "⏳ En cours uniquement": query += " WHERE date_realisation LIKE '%En cours%'"
@@ -614,7 +613,6 @@ if page == "📋 Planning de l'équipe":
                 if not priorite: priorite = "1 - Faible 🟢"
                 if commentaire is None: commentaire = ""
                 
-                # 🟢 CONVERSION PROPRE DE LA DATE MÊME POUR LES ANCIENNES TÂCHES
                 if date_b:
                     try:
                         date_aff = datetime.strptime(date_b, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
@@ -646,16 +644,22 @@ if page == "📋 Planning de l'équipe":
                         st.rerun()
 
                 with cols[3]:
+                    # ✅ CHANGEMENT : Les 4 cases colorées s'affichent maintenant aussi sur Mobile !
                     urgency_html = f'''
-                    <div class="pc-only urgency-container {urg_class}" title="{priorite}">
+                    <div class="urgency-container {urg_class}" title="{priorite}">
                         <div class="urg-box b1"></div>
                         <div class="urg-box b2"></div>
                         <div class="urg-box b3"></div>
                         <div class="urg-box b4"></div>
                     </div>
-                    <div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite.split("-")[0].strip() if "-" in priorite else priorite}</span></div>
                     '''
-                    st.markdown(urgency_html, unsafe_allow_html=True)
+                    st.markdown(f'''
+                    <div class="pc-only">{urgency_html}</div>
+                    <div class="mob-only mob-row">
+                        <span class="mob-lbl">🚨 Urgence</span>
+                        <span class="mob-val" style="display:flex; justify-content:flex-end;">{urgency_html}</span>
+                    </div>
+                    ''', unsafe_allow_html=True)
                 
                 with cols[4]:
                     st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 500; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
@@ -795,7 +799,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
     onglet_taches, = st.tabs(["📋 Archives Tâches"])
     
     with onglet_taches:
-        # 🟢 LECTURE DE LA DATE DE CREATION AUSSI DANS LES ARCHIVES
         cursor.execute("""
             SELECT 'historique' AS provenance, id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
             FROM planning_archive
@@ -823,7 +826,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             for ta in taches_archived:
                 provenance, id_arch, date_b, qui, quoi, temps, statut, priorite, date_arch = ta
                 
-                # 🟢 CONVERSION DE LA DATE POUR L'AFFICHAGE ARCHIVE
                 if date_b:
                     try:
                         date_aff = datetime.strptime(date_b, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
@@ -853,8 +855,22 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.rerun()
 
                 with c[3]:
-                    texte_priorite = priorite.split("-")[0].strip() if priorite and "-" in priorite else priorite
-                    st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{texte_priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
+                    # ✅ MÊME DESIGN D'URGENCE QUE DANS LE PLANNING, POUR MOBILE AUSSI
+                    urgency_html = f'''
+                    <div class="urgency-container {urg_class}" title="{priorite}">
+                        <div class="urg-box b1"></div>
+                        <div class="urg-box b2"></div>
+                        <div class="urg-box b3"></div>
+                        <div class="urg-box b4"></div>
+                    </div>
+                    '''
+                    st.markdown(f'''
+                    <div class="pc-only">{urgency_html}</div>
+                    <div class="mob-only mob-row">
+                        <span class="mob-lbl">🚨 Urgence</span>
+                        <span class="mob-val" style="display:flex; justify-content:flex-end;">{urgency_html}</span>
+                    </div>
+                    ''', unsafe_allow_html=True)
                 
                 with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
                 
