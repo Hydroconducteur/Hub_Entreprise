@@ -477,7 +477,6 @@ with st.sidebar:
         
     st.write("---")
     st.title("🗺️ Menu Principal")
-    # ✅ LA ZONE TCHAT EST BIEN LÀ !
     liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat"]
     if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
@@ -537,9 +536,9 @@ if page == "📋 Planning de l'équipe":
     st.caption("Suivi en temps réel. Cliquez sur le bloc d'une mission pour l'ouvrir en grand.")
 
     if st.session_state.modal_mission:
-        num_m, qui_m, quoi_m = st.session_state.modal_mission
+        date_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
-            st.markdown(f"### 🔍 Détails de la Mission — Créée le {num_m}")
+            st.markdown(f"### 🔍 Détails de la Mission — Créée le {date_m}")
             st.markdown(f"👤 **Assigné à :** {qui_m}")
             st.markdown("📋 **Description complète :**")
             st.info(quoi_m)
@@ -557,7 +556,6 @@ if page == "📋 Planning de l'équipe":
                 col1, col2 = st.columns(2)
                 with col1:
                     qui = st.selectbox("Assigné à", liste_employes) if liste_employes else st.text_input("Assigné à")
-                    # ✅ CHANGEMENT NOUVELLE URGENCE
                     priorite_choisie = st.selectbox("Urgence", ["1 - Faible 🟢", "2 - Moyen 🟡", "3 - Important 🟠", "4 - Critique 🔴"])
                 with col2:
                     temps = st.text_input("Temps estimé (ex: 2h30)")
@@ -565,26 +563,24 @@ if page == "📋 Planning de l'équipe":
                 
                 if st.form_submit_button("Ajouter au planning"):
                     if qui and action:
-                        # ✅ CHANGEMENT DATE À LA PLACE DE L'ID
                         now_paris = datetime.now(ZoneInfo("Europe/Paris"))
                         now_brute = now_paris.strftime("%Y-%m-%d %H:%M:%S")
-                        date_crea_format = now_paris.strftime("%d/%m à %H:%M")
                         
-                        cursor.execute("INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (date_crea_format, qui, action, temps, "En cours ⏳", now_brute, priorite_choisie, ""))
+                        # Note: La colonne num_tache n'est plus utile, on insère la date brute qui servira à l'affichage
+                        cursor.execute("INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", ("", qui, action, temps, "En cours ⏳", now_brute, priorite_choisie, ""))
                         conn.commit()
                         st.rerun()
 
     st.write("### 📅 Tâches actives")
     
-    # ✅ NOUVEAU MENU DE FILTRAGE
     col_f1, col_f2 = st.columns([1, 2])
     with col_f1:
         filtre_statut = st.selectbox("📌 Filtrer l'affichage :", ["Toutes les tâches", "⏳ En cours uniquement", "✅ Terminées uniquement"])
 
     @st.fragment(run_every=8)
     def afficher_tableau_taches(filtre):
-        # ✅ RÉCUPÉRATION DU COMMENTAIRE INCLUSE ET TRI PAR DATE
-        query = "SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, commentaire FROM planning"
+        # 🟢 LECTURE DIRECTE DE LA DATE DE CRÉATION POUR REMPLACER L'ANCIEN ID
+        query = "SELECT id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, commentaire FROM planning"
         
         if filtre == "⏳ En cours uniquement": query += " WHERE date_realisation LIKE '%En cours%'"
         elif filtre == "✅ Terminées uniquement": query += " WHERE date_realisation NOT LIKE '%En cours%'"
@@ -595,7 +591,6 @@ if page == "📋 Planning de l'équipe":
         taches = cursor.fetchall()
         
         if taches:
-            # ✅ NOUVEAUX RATIOS DE COLONNES (Incluant le Commentaire)
             if st.session_state.role == "Administrateur":
                 rep = [1.0, 1.2, 2.5, 1.4, 0.8, 1.3, 1.3, 1.2, 0.6]
                 cols_h = st.columns(rep, vertical_alignment="center")
@@ -603,24 +598,31 @@ if page == "📋 Planning de l'équipe":
                 rep = [1.0, 1.2, 2.7, 1.4, 0.8, 1.4, 1.4, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # Grille d'en-tête (ID remplacé par DATE)
             with cols_h[0]: st.markdown("<p><span class='header-mark'></span>DATE</p>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("<p>Mission (Cliquer)</p>", unsafe_allow_html=True)
             with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
             with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
             with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<p>Commentaire</p>", unsafe_allow_html=True) # ✅ NOUVELLE COLONNE
+            with cols_h[6]: st.markdown("<p>Commentaire</p>", unsafe_allow_html=True)
             with cols_h[7]: st.markdown("<p>Action</p>", unsafe_allow_html=True)
             if st.session_state.role == "Administrateur": 
                 with cols_h[8]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
 
             for t in taches:
-                id_t, num, qui, quoi, temps, statut, priorite, commentaire = t
+                id_t, date_b, qui, quoi, temps, statut, priorite, commentaire = t
                 if not priorite: priorite = "1 - Faible 🟢"
                 if commentaire is None: commentaire = ""
                 
-                # ✅ AJOUT DES CLASSES D'URGENCE POUR LES COULEURS
+                # 🟢 CONVERSION PROPRE DE LA DATE MÊME POUR LES ANCIENNES TÂCHES
+                if date_b:
+                    try:
+                        date_aff = datetime.strptime(date_b, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
+                    except:
+                        date_aff = date_b
+                else:
+                    date_aff = "Inconnue"
+                
                 urg_class = "urg-1"
                 if "2" in priorite or "Moyen" in priorite: urg_class = "urg-2"
                 elif "3" in priorite or "Important" in priorite: urg_class = "urg-3"
@@ -630,7 +632,7 @@ if page == "📋 Planning de l'équipe":
                 cols = st.columns(rep, vertical_alignment="center")
                 
                 with cols[0]:
-                    st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: 700; color: #94a3b8; font-size: 0.8rem;">{num}</div><div class="mob-only mob-title">📅 Date: {num}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: 700; color: #94a3b8; font-size: 0.8rem;">{date_aff}</div><div class="mob-only mob-title">📅 Date: {date_aff}</div>', unsafe_allow_html=True)
                 
                 with cols[1]:
                     st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
@@ -640,11 +642,10 @@ if page == "📋 Planning de l'équipe":
                     limite_caracteres = 30
                     quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True):
-                        st.session_state.modal_mission = (num, qui, quoi)
+                        st.session_state.modal_mission = (date_aff, qui, quoi)
                         st.rerun()
 
                 with cols[3]:
-                    # ✅ AFFICHAGE DES 4 CASES COLORÉES
                     urgency_html = f'''
                     <div class="pc-only urgency-container {urg_class}" title="{priorite}">
                         <div class="urg-box b1"></div>
@@ -670,7 +671,6 @@ if page == "📋 Planning de l'équipe":
                     """, unsafe_allow_html=True)
                     
                 with cols[6]:
-                    # ✅ GESTION DU BOUTON COMMENTAIRE
                     st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">💬 Commentaire</span></div>', unsafe_allow_html=True)
                     label_comm = f"💬 {commentaire[:10]}..." if commentaire else "📝 Ajouter"
                     with st.popover(label_comm, use_container_width=True):
@@ -712,7 +712,7 @@ if page == "📋 Planning de l'équipe":
 
 
 # ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ (INTACT)
+# PAGE 2 : LE TCHAT PRIVÉ
 # ==========================================
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
@@ -782,9 +782,9 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
     st.title("🗄️ Archives Administrateur")
     
     if st.session_state.modal_mission:
-        num_m, qui_m, quoi_m = st.session_state.modal_mission
+        date_m, qui_m, quoi_m = st.session_state.modal_mission
         with st.container(border=True):
-            st.markdown(f"### 🔍 Détails de la Mission Archivée — Créée le {num_m}")
+            st.markdown(f"### 🔍 Détails de la Mission Archivée — Créée le {date_m}")
             st.markdown(f"👤 **Assigné à :** {qui_m}")
             st.info(quoi_m)
             if st.button("Fermer la description ❌", use_container_width=True):
@@ -792,15 +792,15 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 st.rerun()
         st.write("---")
 
-    # ✅ SUPPRESSION PROPRE DE L'ONGLET TCHAT ARCHIVÉ
     onglet_taches, = st.tabs(["📋 Archives Tâches"])
     
     with onglet_taches:
+        # 🟢 LECTURE DE LA DATE DE CREATION AUSSI DANS LES ARCHIVES
         cursor.execute("""
-            SELECT 'historique' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
+            SELECT 'historique' AS provenance, id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
             FROM planning_archive
             UNION ALL
-            SELECT 'recents' AS provenance, id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, 'En attente' AS date_archivage 
+            SELECT 'recents' AS provenance, id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, 'En attente' AS date_archivage 
             FROM planning 
             WHERE date_realisation LIKE 'Fait le %'
             ORDER BY date_archivage DESC
@@ -821,9 +821,17 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             with cols_h[7]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
             
             for ta in taches_archived:
-                provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
+                provenance, id_arch, date_b, qui, quoi, temps, statut, priorite, date_arch = ta
                 
-                # Récupération de la classe d'urgence pour la couleur de bordure (mobile)
+                # 🟢 CONVERSION DE LA DATE POUR L'AFFICHAGE ARCHIVE
+                if date_b:
+                    try:
+                        date_aff = datetime.strptime(date_b, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
+                    except:
+                        date_aff = date_b
+                else:
+                    date_aff = "Inconnue"
+                
                 urg_class = "urg-1"
                 if priorite:
                     if "2" in priorite or "Moyen" in priorite: urg_class = "urg-2"
@@ -833,7 +841,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                with c[0]: st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8; font-size:0.8rem;">{num}</div><div class="mob-only mob-title">🗄️ Archive Date : {num}</div>', unsafe_allow_html=True)
+                with c[0]: st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8; font-size:0.8rem;">{date_aff}</div><div class="mob-only mob-title">🗄️ Archive Date : {date_aff}</div>', unsafe_allow_html=True)
                 with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with c[2]:
@@ -841,11 +849,10 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                     limite_caracteres = 30
                     quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
-                        st.session_state.modal_mission = (num, qui, quoi)
+                        st.session_state.modal_mission = (date_aff, qui, quoi)
                         st.rerun()
 
                 with c[3]:
-                    # Affichage classique de l'urgence en texte pour les archives
                     texte_priorite = priorite.split("-")[0].strip() if priorite and "-" in priorite else priorite
                     st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{texte_priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
                 
