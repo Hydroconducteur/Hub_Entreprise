@@ -4,12 +4,12 @@ import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-# --- CONFIGURATION DE LA PAGE ---
+# Configuration de la page
 st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS PREMIUM & ULTRA-ADAPTATIVE ---
+# CSS PC/Téléphone
 st.markdown("""
 <style>
 /* Reset et utilitaires */
@@ -22,8 +22,6 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
     justify-content: center !important;
     width: 100% !important;
 }
-
-/* --- 🌟 STYLISATION DESIGN PROFESSIONNEL (LOOK SAAS) --- */
 
 /* 1. Le Bouton d'Action Principal (Fait / Annuler) */
 div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")),
@@ -145,7 +143,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     }
 }
 
-/* --- NOUVEAU DESIGN URGENCE (4 CASES) --- */
+/* Boutton Urgence */
 .urgency-container {
     display: flex;
     gap: 4px;
@@ -164,7 +162,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
 .urg-3 .b1, .urg-3 .b2, .urg-3 .b3 { background-color: #ea580c; border-color: #ea580c; box-shadow: 0 0 5px rgba(234, 88, 12, 0.4); }
 .urg-4 .b1, .urg-4 .b2, .urg-4 .b3, .urg-4 .b4 { background-color: #dc2626; border-color: #dc2626; box-shadow: 0 0 5px rgba(220, 38, 38, 0.4); }
 
-/* --- 📱 COMPORTEMENT MOBILE OPTIMISÉ --- */
+/* 📱 CSS Mobile */
 @media (max-width: 768px) {
     .mob-only { display: block !important; }
     .pc-only { display: none !important; }
@@ -244,7 +242,6 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     }
 }
 
-/* --- BADGES EN PILULE (MODERNE SAAS) --- */
 .status-badge {
     display: inline-flex;
     align-items: center;
@@ -276,7 +273,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
 """, unsafe_allow_html=True)
 
 
-# --- CONNEXION BASE DE DONNÉES CLOUD (TURSO HTTP) ---
+# Connexion a la base de donnée Turso HTTP
 DB_URL = st.secrets["DB_URL"].replace("libsql://", "https://")
 TOKEN = st.secrets["DB_TOKEN"]
 
@@ -345,7 +342,7 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION BASE DE DONNÉES COCHÉE ET MISE À JOUR ADM ---
+# Innitialisation de la base de donnée mise a jour
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
@@ -379,7 +376,7 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
+# Algorithme de nettoyage automatique + archivage
 @st.cache_data(ttl=60)
 def nettoyer_et_archiver_data():
     try:
@@ -417,13 +414,13 @@ def nettoyer_et_archiver_data():
 
 nettoyer_et_archiver_data()
 
-# --- GESTION DES SESSIONS ---
+# Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
 if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
 
-# --- CONNEXION AUTOMATIQUE VIA URL ---
+# Connexion automatique via URL
 parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url and "code" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
@@ -439,7 +436,7 @@ if st.session_state.user is None and "qui" in parametres_url and "code" in param
             st.session_state.role = "Employé"
         st.rerun()
 
-# --- ÉCRAN DE CONNEXION PRINCIPAL ---
+# Écran de connexion principale
 if st.session_state.user is None:
     st.title("📱 Hub Logistique & Entreprise")
     st.subheader("Veuillez vous identifier pour accéder aux outils.")
@@ -465,7 +462,7 @@ if st.session_state.user is None:
                     st.error("❌ Prénom ou Code Secret incorrect. Vous devez être invité par Christophe.")
     st.stop()
 
-# --- BARRE LATÉRALE ---
+# Barre lattéral
 with st.sidebar:
     st.success(f"👤 Connecté : {st.session_state.user} ({st.session_state.role})")
     if st.button("Se déconnecter", use_container_width=True):
@@ -528,9 +525,7 @@ with st.sidebar:
                 st.code(f"{base_url}/?qui={u[0]}&code={u[1]}", language="text")
 
 
-# ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE
-# ==========================================
+# Page 1 Planning Dynamique
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi en temps réel. Cliquez sur le bloc d'une mission pour l'ouvrir en grand.")
@@ -552,7 +547,6 @@ if page == "📋 Planning de l'équipe":
             cursor.execute("SELECT prenom FROM utilisateurs WHERE prenom != 'Christophe'")
             liste_employes = [row[0] for row in cursor.fetchall()]
             
-            # ✅ CHANGEMENT : ajout de clear_on_submit=True pour vider la case temps et description après envoi
             with st.form("form_tache", clear_on_submit=True):
                 col1, col2 = st.columns(2)
                 with col1:
@@ -644,7 +638,6 @@ if page == "📋 Planning de l'équipe":
                         st.rerun()
 
                 with cols[3]:
-                    # ✅ CHANGEMENT : Les 4 cases colorées s'affichent maintenant aussi sur Mobile !
                     urgency_html = f'''
                     <div class="urgency-container {urg_class}" title="{priorite}">
                         <div class="urg-box b1"></div>
@@ -715,9 +708,7 @@ if page == "📋 Planning de l'équipe":
     afficher_tableau_taches(filtre_statut)
 
 
-# ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ
-# ==========================================
+# Page 2 Tchat de groupe et Tchat privé
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
@@ -779,9 +770,7 @@ elif page == "💬 Zone Tchat":
             st.rerun()
 
 
-# ==========================================
-# 🗄️ PAGE 3 : ARCHIVES
-# ==========================================
+# Page 3 Archives
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
@@ -855,7 +844,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.rerun()
 
                 with c[3]:
-                    # ✅ MÊME DESIGN D'URGENCE QUE DANS LE PLANNING, POUR MOBILE AUSSI
                     urgency_html = f'''
                     <div class="urgency-container {urg_class}" title="{priorite}">
                         <div class="urg-box b1"></div>
