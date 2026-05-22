@@ -109,7 +109,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         transform: translateX(2px);
     }
 
-    /* Bordures colorées de priorité connectées aux classes d'urgence */
+    /* Bordures colorées de priorité discrètes et élégantes */
     div[data-testid="stHorizontalBlock"]:has(.urg-4) { border-left: 4px solid #dc2626 !important; }
     div[data-testid="stHorizontalBlock"]:has(.urg-3) { border-left: 4px solid #ea580c !important; }
     div[data-testid="stHorizontalBlock"]:has(.urg-2) { border-left: 4px solid #f97316 !important; }
@@ -120,7 +120,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         margin-top: 0 !important;
     }
 
-    /* Style des boutons Popover (Mission et Commentaire) */
+    /* Style du bouton Mission cliquable et Popovers */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(3) button,
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"]:nth-of-type(7) button {
         background: rgba(255, 255, 255, 0.03) !important;
@@ -159,15 +159,10 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
-/* Niveau 1 : Jaune */
 .urg-1 .b1 { background-color: #eab308; border-color: #eab308; box-shadow: 0 0 5px rgba(234, 179, 8, 0.4); }
-/* Niveau 2 : Orange */
 .urg-2 .b1, .urg-2 .b2 { background-color: #f97316; border-color: #f97316; box-shadow: 0 0 5px rgba(249, 115, 22, 0.4); }
-/* Niveau 3 : Orange Foncé */
 .urg-3 .b1, .urg-3 .b2, .urg-3 .b3 { background-color: #ea580c; border-color: #ea580c; box-shadow: 0 0 5px rgba(234, 88, 12, 0.4); }
-/* Niveau 4 : Rouge */
 .urg-4 .b1, .urg-4 .b2, .urg-4 .b3, .urg-4 .b4 { background-color: #dc2626; border-color: #dc2626; box-shadow: 0 0 5px rgba(220, 38, 38, 0.4); }
-
 
 /* --- 📱 COMPORTEMENT MOBILE OPTIMISÉ --- */
 @media (max-width: 768px) {
@@ -185,7 +180,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         display: flex !important;
         flex-direction: column !important;
     }
-
+    
     div[data-testid="stHorizontalBlock"]:has(.urg-4) { border-left: 5px solid #dc2626 !important; }
     div[data-testid="stHorizontalBlock"]:has(.urg-3) { border-left: 5px solid #ea580c !important; }
     div[data-testid="stHorizontalBlock"]:has(.urg-2) { border-left: 5px solid #f97316 !important; }
@@ -356,10 +351,15 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY, code_secret TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     
-    try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '1 - Faible 🟢'")
+    try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
     try: cursor.execute("ALTER TABLE planning ADD COLUMN commentaire TEXT DEFAULT ''")
+    except sqlite3.OperationalError: pass
+    try: cursor.execute("ALTER TABLE tchat ADD COLUMN garder_permanent INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
+    try: cursor.execute("ALTER TABLE tchat_archive ADD COLUMN garder_permanent INTEGER DEFAULT 0")
     except sqlite3.OperationalError: pass
     try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
     except sqlite3.OperationalError: pass
@@ -387,7 +387,19 @@ def nettoyer_et_archiver_data():
         heure_actuelle = now_paris.hour
         date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
         
+        if heure_actuelle >= 20 or heure_actuelle < 8:
+            cursor.execute("SELECT COUNT(*) FROM tchat")
+            if cursor.fetchone()[0] > 0:
+                cursor.execute("""
+                    INSERT INTO tchat_archive (expediteur, destinataire, texte, date_envoi, date_creation_brute, date_archivage, garder_permanent)
+                    SELECT expediteur, destinataire, texte, date_envoi, date_creation_brute, ?, garder_permanent FROM tchat
+                """, (date_actuelle_str,))
+                cursor.execute("DELETE FROM tchat")
+                conn.commit()
+
         il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
+        conn.commit()
         
         cursor.execute("""
             INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
@@ -465,7 +477,8 @@ with st.sidebar:
         
     st.write("---")
     st.title("🗺️ Menu Principal")
-    liste_pages = ["📋 Planning de l'équipe"]
+    # ✅ LA ZONE TCHAT EST BIEN LÀ !
+    liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat"]
     if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
@@ -544,45 +557,45 @@ if page == "📋 Planning de l'équipe":
                 col1, col2 = st.columns(2)
                 with col1:
                     qui = st.selectbox("Assigné à", liste_employes) if liste_employes else st.text_input("Assigné à")
-                    priorite_choisie = st.selectbox("Niveau d'Urgence", ["1 - Faible 🟢", "2 - Moyen 🟡", "3 - Important 🟠", "4 - Critique 🔴"])
+                    # ✅ CHANGEMENT NOUVELLE URGENCE
+                    priorite_choisie = st.selectbox("Urgence", ["1 - Faible 🟢", "2 - Moyen 🟡", "3 - Important 🟠", "4 - Critique 🔴"])
                 with col2:
                     temps = st.text_input("Temps estimé (ex: 2h30)")
                     action = st.text_area("Description du travail")
                 
                 if st.form_submit_button("Ajouter au planning"):
                     if qui and action:
+                        # ✅ CHANGEMENT DATE À LA PLACE DE L'ID
                         now_paris = datetime.now(ZoneInfo("Europe/Paris"))
                         now_brute = now_paris.strftime("%Y-%m-%d %H:%M:%S")
-                        date_formatee = now_paris.strftime("%d/%m à %H:%M") # Formattage Date remplaçant l'ID
+                        date_crea_format = now_paris.strftime("%d/%m à %H:%M")
                         
-                        cursor.execute("INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (date_formatee, qui, action, temps, "En cours ⏳", now_brute, priorite_choisie, ""))
+                        cursor.execute("INSERT INTO planning (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, commentaire) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (date_crea_format, qui, action, temps, "En cours ⏳", now_brute, priorite_choisie, ""))
                         conn.commit()
                         st.rerun()
 
     st.write("### 📅 Tâches actives")
     
-    # --- 🆕 FILTRE PAR STATUT ---
+    # ✅ NOUVEAU MENU DE FILTRAGE
     col_f1, col_f2 = st.columns([1, 2])
     with col_f1:
         filtre_statut = st.selectbox("📌 Filtrer l'affichage :", ["Toutes les tâches", "⏳ En cours uniquement", "✅ Terminées uniquement"])
 
     @st.fragment(run_every=8)
     def afficher_tableau_taches(filtre):
+        # ✅ RÉCUPÉRATION DU COMMENTAIRE INCLUSE ET TRI PAR DATE
         query = "SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, commentaire FROM planning"
         
-        # Filtre SQL selon la sélection
-        if filtre == "⏳ En cours uniquement":
-            query += " WHERE date_realisation LIKE '%En cours%'"
-        elif filtre == "✅ Terminées uniquement":
-            query += " WHERE date_realisation NOT LIKE '%En cours%'"
-            
-        # --- 🆕 TRI PAR DATE DESCENDANTE (PLUS RÉCENT EN HAUT) ---
+        if filtre == "⏳ En cours uniquement": query += " WHERE date_realisation LIKE '%En cours%'"
+        elif filtre == "✅ Terminées uniquement": query += " WHERE date_realisation NOT LIKE '%En cours%'"
+        
         query += " ORDER BY date_creation_brute DESC"
         
         cursor.execute(query)
         taches = cursor.fetchall()
         
         if taches:
+            # ✅ NOUVEAUX RATIOS DE COLONNES (Incluant le Commentaire)
             if st.session_state.role == "Administrateur":
                 rep = [1.0, 1.2, 2.5, 1.4, 0.8, 1.3, 1.3, 1.2, 0.6]
                 cols_h = st.columns(rep, vertical_alignment="center")
@@ -590,34 +603,34 @@ if page == "📋 Planning de l'équipe":
                 rep = [1.0, 1.2, 2.7, 1.4, 0.8, 1.4, 1.4, 1.2]
                 cols_h = st.columns(rep, vertical_alignment="center")
             
-            # Grille d'en-tête (L'ID est remplacé par DATE)
+            # Grille d'en-tête (ID remplacé par DATE)
             with cols_h[0]: st.markdown("<p><span class='header-mark'></span>DATE</p>", unsafe_allow_html=True)
             with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
             with cols_h[2]: st.markdown("<p>Mission (Cliquer)</p>", unsafe_allow_html=True)
             with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
             with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
             with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<p>Commentaire</p>", unsafe_allow_html=True)
+            with cols_h[6]: st.markdown("<p>Commentaire</p>", unsafe_allow_html=True) # ✅ NOUVELLE COLONNE
             with cols_h[7]: st.markdown("<p>Action</p>", unsafe_allow_html=True)
             if st.session_state.role == "Administrateur": 
                 with cols_h[8]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
 
             for t in taches:
                 id_t, num, qui, quoi, temps, statut, priorite, commentaire = t
-                if not priorite: priorite = "1 - Faible"
+                if not priorite: priorite = "1 - Faible 🟢"
                 if commentaire is None: commentaire = ""
                 
-                # --- 🆕 DESIGN 4 CASES D'URGENCE ---
+                # ✅ AJOUT DES CLASSES D'URGENCE POUR LES COULEURS
                 urg_class = "urg-1"
                 if "2" in priorite or "Moyen" in priorite: urg_class = "urg-2"
                 elif "3" in priorite or "Important" in priorite: urg_class = "urg-3"
                 elif "4" in priorite or "Critique" in priorite or "Très urgent" in priorite: urg_class = "urg-4"
-                elif "urgent" in priorite.lower(): urg_class = "urg-4" # Rétrocompatibilité ancienne BDD
+                elif "urgent" in priorite.lower(): urg_class = "urg-4"
                 
                 cols = st.columns(rep, vertical_alignment="center")
                 
                 with cols[0]:
-                    st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: 700; color: #94a3b8; font-size: 0.8rem;">{num}</div><div class="mob-only mob-title">📅 Date : {num}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: 700; color: #94a3b8; font-size: 0.8rem;">{num}</div><div class="mob-only mob-title">📅 Date: {num}</div>', unsafe_allow_html=True)
                 
                 with cols[1]:
                     st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
@@ -631,7 +644,7 @@ if page == "📋 Planning de l'équipe":
                         st.rerun()
 
                 with cols[3]:
-                    # Bloc des 4 cases CSS générées dynamiquement
+                    # ✅ AFFICHAGE DES 4 CASES COLORÉES
                     urgency_html = f'''
                     <div class="pc-only urgency-container {urg_class}" title="{priorite}">
                         <div class="urg-box b1"></div>
@@ -657,6 +670,7 @@ if page == "📋 Planning de l'équipe":
                     """, unsafe_allow_html=True)
                     
                 with cols[6]:
+                    # ✅ GESTION DU BOUTON COMMENTAIRE
                     st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">💬 Commentaire</span></div>', unsafe_allow_html=True)
                     label_comm = f"💬 {commentaire[:10]}..." if commentaire else "📝 Ajouter"
                     with st.popover(label_comm, use_container_width=True):
@@ -694,8 +708,71 @@ if page == "📋 Planning de l'équipe":
         else:
             st.info("Aucune tâche ne correspond à ce filtre.")
 
-    # Exécution de la fonction avec le filtre sélectionné
     afficher_tableau_taches(filtre_statut)
+
+
+# ==========================================
+# PAGE 2 : LE TCHAT PRIVÉ (INTACT)
+# ==========================================
+elif page == "💬 Zone Tchat":
+    st.title("💬 Centre de Communication")
+    st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
+    
+    cursor.execute("SELECT prenom FROM utilisateurs")
+    employes = [row[0] for row in cursor.fetchall()]
+    if "Christophe" not in employes: employes.append("Christophe")
+        
+    options_tchat = ["📢 Canal #Général"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
+    choix_tchat = st.selectbox("Discussion active :", options_tchat)
+    st.write("---")
+
+    @st.fragment(run_every=6)
+    def afficher_flux_messages(cible_tchat):
+        if cible_tchat == "📢 Canal #Général":
+            st.subheader("📢 Fil d'actualité Général")
+            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
+        else:
+            cible = cible_tchat.replace("🔒 Privé avec ", "")
+            st.subheader(f"🔒 Bulle privée avec {cible}")
+            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC", (st.session_state.user, cible, cible, st.session_state.user))
+        
+        messages = cursor.fetchall()
+        zone_msg = st.container(height=380)
+        with zone_msg:
+            if messages:
+                for m in messages:
+                    id_msg, exp, txt, date, permanent = m
+                    
+                    base_largeur = [8.5, 0.75, 0.75] if st.session_state.role == "Administrateur" else [9.2, 0.8]
+                    cols_msg = st.columns(base_largeur, vertical_alignment="center")
+                    
+                    with cols_msg[0]:
+                        label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
+                        st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
+                    
+                    if cols_msg[1].button("📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver", use_container_width=True):
+                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (0 if permanent == 1 else 1, id_msg))
+                        conn.commit()
+                        st.rerun()
+                        
+                    if st.session_state.role == "Administrateur" and cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
+                        cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
+                        conn.commit()
+                        st.rerun()
+            else:
+                st.caption("Aucun échange pour le moment.")
+
+    afficher_flux_messages(choix_tchat)
+
+    with st.form("form_msg", clear_on_submit=True):
+        col_txt, col_btn = st.columns([8.2, 1.8], vertical_alignment="center")
+        nouveau_msg = col_txt.text_input("Tapez votre message ici...", label_visibility="collapsed")
+        if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
+            dest = "Tous" if choix_tchat == "📢 Canal #Général" else choix_tchat.replace("🔒 Privé avec ", "")
+            now_paris = datetime.now(ZoneInfo("Europe/Paris"))
+            cursor.execute("INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute, garder_permanent) VALUES (?, ?, ?, ?, ?, 0)", (st.session_state.user, dest, nouveau_msg.strip(), now_paris.strftime("%H:%M"), now_paris.strftime("%Y-%m-%d %H:%M:%S")))
+            conn.commit()
+            st.rerun()
 
 
 # ==========================================
@@ -715,6 +792,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 st.rerun()
         st.write("---")
 
+    # ✅ SUPPRESSION PROPRE DE L'ONGLET TCHAT ARCHIVÉ
     onglet_taches, = st.tabs(["📋 Archives Tâches"])
     
     with onglet_taches:
@@ -745,13 +823,17 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
             for ta in taches_archived:
                 provenance, id_arch, num, qui, quoi, temps, statut, priorite, date_arch = ta
                 
-                prio_class = "prio-low"
-                if "Important" in priorite: prio_class = "prio-med"
-                elif "urgent" in priorite.lower(): prio_class = "prio-high"
+                # Récupération de la classe d'urgence pour la couleur de bordure (mobile)
+                urg_class = "urg-1"
+                if priorite:
+                    if "2" in priorite or "Moyen" in priorite: urg_class = "urg-2"
+                    elif "3" in priorite or "Important" in priorite: urg_class = "urg-3"
+                    elif "4" in priorite or "Critique" in priorite or "Très urgent" in priorite: urg_class = "urg-4"
+                    elif "urgent" in priorite.lower(): urg_class = "urg-4"
                 
                 c = st.columns(rep_arch, vertical_alignment="center")
                 
-                with c[0]: st.markdown(f'<div class="row-marker {prio_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8; font-size:0.8rem;">{num}</div><div class="mob-only mob-title">🗄️ Archive Date : {num}</div>', unsafe_allow_html=True)
+                with c[0]: st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8; font-size:0.8rem;">{num}</div><div class="mob-only mob-title">🗄️ Archive Date : {num}</div>', unsafe_allow_html=True)
                 with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with c[2]:
@@ -762,7 +844,11 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.session_state.modal_mission = (num, qui, quoi)
                         st.rerun()
 
-                with c[3]: st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{priorite.split("-")[0].strip() if "-" in priorite else priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
+                with c[3]:
+                    # Affichage classique de l'urgence en texte pour les archives
+                    texte_priorite = priorite.split("-")[0].strip() if priorite and "-" in priorite else priorite
+                    st.markdown(f'<div class="pc-only prio-badge" style="text-align: center;">{texte_priorite}</div><div class="mob-only mob-row"><span class="mob-lbl">🚨 Urgence</span><span class="mob-val">{priorite}</span></div>', unsafe_allow_html=True)
+                
                 with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
                 
                 with c[5]: 
