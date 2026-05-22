@@ -4,12 +4,12 @@ import sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-# --- CONFIGURATION DE LA PAGE ---
+# Configuration de la page
 st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wide")
 
 VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
 
-# --- INJECTION CSS PREMIUM & ULTRA-ADAPTATIVE ---
+# CSS
 st.markdown("""
 <style>
 /* Reset et utilitaires */
@@ -23,7 +23,6 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
     width: 100% !important;
 }
 
-/* --- 🌟 STYLISATION DESIGN PROFESSIONNEL (LOOK SAAS) --- */
 
 /* 1. Le Bouton d'Action Principal (Fait / Annuler) */
 div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")),
@@ -255,7 +254,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
 """, unsafe_allow_html=True)
 
 
-# --- CONNEXION BASE DE DONNÉES CLOUD (TURSO HTTP) ---
+# Connexion a la base de données Cloud Turso (HTTP)
 DB_URL = st.secrets["DB_URL"].replace("libsql://", "https://")
 TOKEN = st.secrets["DB_TOKEN"]
 
@@ -324,7 +323,6 @@ class TursoAdapter:
 conn = TursoAdapter()
 cursor = conn.cursor()
 
-# --- INITIALISATION BASE DE DONNÉES COCHÉE ET MISE À JOUR ADM ---
 def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS planning (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, garder_permanent INTEGER DEFAULT 0)")
@@ -341,7 +339,7 @@ def initialiser_structure_base():
     try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
     except sqlite3.OperationalError: pass
     
-    # 🆕 AJOUT COLONNE COMMENTAIRE (SÉCURITÉ)
+    #  Colonne Commentaire
     try: cursor.execute("ALTER TABLE planning ADD COLUMN commentaire TEXT DEFAULT ''")
     except sqlite3.OperationalError: pass
     
@@ -360,7 +358,7 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 
-# --- ALGORITHME DE NETTOYAGE & ARCHIVAGE AUTOMATIQUE ---
+# Algorithme nettoyage/archivage
 @st.cache_data(ttl=60)
 def nettoyer_et_archiver_data():
     try:
@@ -398,13 +396,13 @@ def nettoyer_et_archiver_data():
 
 nettoyer_et_archiver_data()
 
-# --- GESTION DES SESSIONS ---
+# Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
 if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
 
-# --- CONNEXION AUTOMATIQUE VIA URL ---
+# Connexion automatique via URL
 parametres_url = st.query_params
 if st.session_state.user is None and "qui" in parametres_url and "code" in parametres_url:
     prenom_detecte = parametres_url["qui"].strip().capitalize()
@@ -420,7 +418,7 @@ if st.session_state.user is None and "qui" in parametres_url and "code" in param
             st.session_state.role = "Employé"
         st.rerun()
 
-# --- ÉCRAN DE CONNEXION PRINCIPAL ---
+# Écran de connexion principal
 if st.session_state.user is None:
     st.title("📱 Hub Logistique & Entreprise")
     st.subheader("Veuillez vous identifier pour accéder aux outils.")
@@ -446,7 +444,7 @@ if st.session_state.user is None:
                     st.error("❌ Prénom ou Code Secret incorrect. Vous devez être invité par Christophe.")
     st.stop()
 
-# --- BARRE LATÉRALE ---
+# Barre latéral
 with st.sidebar:
     st.success(f"👤 Connecté : {st.session_state.user} ({st.session_state.role})")
     if st.button("Se déconnecter", use_container_width=True):
@@ -509,9 +507,7 @@ with st.sidebar:
                 st.code(f"{base_url}/?qui={u[0]}&code={u[1]}", language="text")
 
 
-# ==========================================
-# PAGE 1 : LE PLANNING DYNAMIQUE
-# ==========================================
+# Page 1 : 'Planning Dynamique'
 if page == "📋 Planning de l'équipe":
     st.title("📋 Planning Global de l'Équipe")
     st.caption("Suivi en temps réel. Cliquez sur le bloc d'une mission pour l'ouvrir en grand.")
@@ -554,12 +550,11 @@ if page == "📋 Planning de l'équipe":
     
     @st.fragment(run_every=8)
     def afficher_tableau_taches():
-        # 🆕 REQUÊTE MODIFIÉE POUR ALLER CHERCHER LA COLONNE COMMENTAIRE
         cursor.execute("SELECT id, num_tache, assigne_a, intitule, temps_estime, date_realisation, priorite, commentaire FROM planning")
         taches = cursor.fetchall()
         
         if taches:
-            # 🆕 NOUVELLES PROPORTIONS DE COLONNES (Ajout de la colonne Commentaire)
+            # Proportion des colonnes
             if st.session_state.role == "Administrateur":
                 rep = [0.6, 1.2, 2.4, 1.2, 0.8, 1.4, 1.4, 1.2, 0.6] # 9 colonnes
                 cols_h = st.columns(rep, vertical_alignment="center")
@@ -621,7 +616,7 @@ if page == "📋 Planning de l'équipe":
                     </div>
                     """, unsafe_allow_html=True)
                 
-                # 🆕 LA NOUVELLE COLONNE COMMENTAIRE
+                # 🆕 Colonne Commentaire
                 with cols[6]:
                     st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">💬 Commentaire</span></div>', unsafe_allow_html=True)
                     label_comm = f"💬 {commentaire[:10]}..." if commentaire else "📝 Ajouter"
@@ -663,9 +658,7 @@ if page == "📋 Planning de l'équipe":
     afficher_tableau_taches()
 
 
-# ==========================================
-# PAGE 2 : LE TCHAT PRIVÉ
-# ==========================================
+# Page 2 : 'Tchat grouper' ou 'tchat privé'
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
@@ -727,9 +720,7 @@ elif page == "💬 Zone Tchat":
             st.rerun()
 
 
-# ==========================================
-# 🗄️ PAGE 3 : ARCHIVES (TCHAT ENLEVÉ PROPREMENT)
-# ==========================================
+# Page 3 : 'Archives'
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
@@ -744,7 +735,6 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 st.rerun()
         st.write("---")
 
-    # 🛠️ CORRECTION : Seul l'onglet Tâches est gardé, plus de messages
     onglet_taches, = st.tabs(["📋 Archives Tâches"])
     
     with onglet_taches:
