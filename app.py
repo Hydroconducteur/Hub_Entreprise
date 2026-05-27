@@ -361,13 +361,15 @@ def initialiser_structure_base():
     try: cursor.execute("ALTER TABLE utilisateurs ADD COLUMN code_secret TEXT DEFAULT '1234'")
     except sqlite3.OperationalError: pass
     
-    cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
+cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom = 'Christophe'")
     admin_row = cursor.fetchone()
     
+    mdp_admin = st.secrets["ADMIN_PASS"]
+    
     if not admin_row:
-        cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES ('Christophe', 'Admin45')")
+        cursor.execute("INSERT OR REPLACE INTO utilisateurs (prenom, code_secret) VALUES ('Christophe', ?)", (mdp_admin,))
     elif admin_row[1] == '1234' or admin_row[1] is None or admin_row[1] == '':
-        cursor.execute("UPDATE utilisateurs SET code_secret = 'Admin45' WHERE prenom = 'Christophe'")
+        cursor.execute("UPDATE utilisateurs SET code_secret = ? WHERE prenom = 'Christophe'", (mdp_admin,))
         
     conn.commit()
 
