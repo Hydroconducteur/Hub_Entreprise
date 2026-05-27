@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 # Configuration de la page
 st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wide")
 
-VOTRE_LIEN_ACTUEL = "https://maupu45.streamlit.app"
+VOTRE_LIEN_ACTUEL = st.secrets.get("APP_URL", "https://maupu45.streamlit.app")
 
 # CSS PC/Téléphone
 st.markdown("""
