@@ -349,6 +349,7 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS utilisateurs (prenom TEXT PRIMARY KEY, code_secret TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS planning_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, num_tache TEXT, assigne_a TEXT, intitule TEXT, temps_estime TEXT, date_realisation TEXT, date_creation_brute TEXT, priorite TEXT, date_archivage TEXT)")
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS rappels_personnels (id INTEGER PRIMARY KEY AUTOINCREMENT, utilisateur TEXT, texte TEXT, date_creation_brute TEXT)")
     
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
@@ -386,6 +387,10 @@ def nettoyer_et_archiver_data():
         heure_actuelle = now_paris.hour
         date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
         
+        # Nettoyage des mémos personnels datant de plus de 7 jours
+        il_y_a_une_semaine = (now_paris - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("DELETE FROM rappels_personnels WHERE date_creation_brute < ?", (il_y_a_une_semaine,))
+
         if heure_actuelle >= 20 or heure_actuelle < 8:
             cursor.execute("SELECT COUNT(*) FROM tchat")
             if cursor.fetchone()[0] > 0:
@@ -398,7 +403,6 @@ def nettoyer_et_archiver_data():
 
         il_y_a_deux_semaines = (now_paris - timedelta(days=14)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("DELETE FROM tchat_archive WHERE date_creation_brute < ? AND garder_permanent = 0", (il_y_a_deux_semaines,))
-        conn.commit()
         
         cursor.execute("""
             INSERT INTO planning_archive (num_tache, assigne_a, intitule, temps_estime, date_realisation, date_creation_brute, priorite, date_archivage)
@@ -409,6 +413,7 @@ def nettoyer_et_archiver_data():
         
         il_y_a_six_mois = (now_paris - timedelta(days=180)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("DELETE FROM planning_archive WHERE date_creation_brute < ?", (il_y_a_six_mois,))
+        
         conn.commit()
     except Exception:
         pass
@@ -476,7 +481,7 @@ with st.sidebar:
         
     st.write("---")
     st.title("🗺️ Menu Principal")
-    liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat"]
+    liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat", "📌 Mes Rappels"]
     if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
@@ -771,8 +776,46 @@ elif page == "💬 Zone Tchat":
             conn.commit()
             st.rerun()
 
+# Page 3 Mes Rappels Personnels
+elif page == "📌 Mes Rappels":
+    st.title("📌 Mes Rappels Personnels")
+    st.caption("Espace privé. Vos notes et commentaires sont automatiquement supprimés après 7 jours.")
 
-# Page 3 Archives
+    with st.form("form_rappel", clear_on_submit=True):
+        nouveau_rappel = st.text_area("📝 Ajouter un nouveau rappel / mémo :", help="Ex: Penser à charger l'outil B, prévenir un tel pour la livraison...")
+        if st.form_submit_button("Ajouter le rappel"):
+            if nouveau_rappel.strip():
+                now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+                cursor.execute("INSERT INTO rappels_personnels (utilisateur, texte, date_creation_brute) VALUES (?, ?, ?)", (st.session_state.user, nouveau_rappel.strip(), now_brute))
+                conn.commit()
+                st.rerun()
+
+    st.write("### 🕒 Vos mémos en cours")
+    cursor.execute("SELECT id, texte, date_creation_brute FROM rappels_personnels WHERE utilisateur = ? ORDER BY date_creation_brute DESC", (st.session_state.user,))
+    rappels = cursor.fetchall()
+
+    if rappels:
+        for r in rappels:
+            id_r, txt_r, date_b_r = r
+            try:
+                date_aff_r = datetime.strptime(date_b_r, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
+            except:
+                date_aff_r = date_b_r
+
+            with st.container(border=True):
+                col_txt, col_btn = st.columns([9, 1], vertical_alignment="center")
+                with col_txt:
+                    st.markdown(f"**🕒 {date_aff_r}**<br>{txt_r}", unsafe_allow_html=True)
+                with col_btn:
+                    if st.button("🗑️", key=f"del_rappel_{id_r}", use_container_width=True, help="Supprimer immédiatement"):
+                        cursor.execute("DELETE FROM rappels_personnels WHERE id = ?", (id_r,))
+                        conn.commit()
+                        st.rerun()
+    else:
+        st.info("Vous n'avez aucun rappel actif pour le moment.")
+
+
+# Page 4 Archives (Administrateur uniquement)
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
