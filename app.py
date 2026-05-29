@@ -61,6 +61,20 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
 
 /* --- 💻 GRILLE DE DONNÉES DESKTOP (PC) --- */
 @media (min-width: 769px) {
+    /* --- CORRECTIONS ALIGNEMENT VERTICAL PARFAIT --- */
+    div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] {
+        gap: 0 !important; /* Annule l'espacement (gap) invisible entre les éléments fantômes */
+    }
+    div[data-testid="stHorizontalBlock"]:has(.row-marker) p {
+        margin-bottom: 0 !important; /* Retire la marge de 1rem par défaut de Streamlit sur les textes */
+    }
+    div[data-testid="element-container"]:has(.mob-spacer) {
+        display: none !important; /* Détruit le conteneur fantôme des labels mobile sur PC */
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
     /* En-tête du tableau modernisé et élargi */
     div[data-testid="stHorizontalBlock"]:has(.header-mark) {
         background: rgba(30, 41, 59, 0.4) !important;
@@ -637,7 +651,8 @@ if page == "📋 Planning de l'équipe":
                     st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with cols[2]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
+                    # Note technique : ajout de la classe .mob-spacer pour pouvoir cibler et détruire ce bloc fantôme en CSS PC
+                    st.markdown('<div class="mob-only mob-spacer" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
                     limite_caracteres = 30
                     quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche, key=f"mission_btn_{id_t}", use_container_width=True):
@@ -675,7 +690,7 @@ if page == "📋 Planning de l'équipe":
                     """, unsafe_allow_html=True)
                     
                 with cols[6]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">💬 Commentaire</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="mob-only mob-spacer" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">💬 Commentaire</span></div>', unsafe_allow_html=True)
                     label_comm = f"💬 {commentaire[:10]}..." if commentaire else "📝 Ajouter"
                     with st.popover(label_comm, use_container_width=True):
                         nouveau_comm = st.text_area("Remarque / Difficulté :", value=commentaire, key=f"comm_area_{id_t}")
@@ -881,7 +896,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with c[2]:
-                    st.markdown('<div class="mob-only" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
+                    st.markdown('<div class="mob-only mob-spacer" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
                     limite_caracteres = 30
                     quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
                     if st.button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
