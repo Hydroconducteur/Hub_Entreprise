@@ -2,8 +2,11 @@ import streamlit as st
 import requests
 import sqlite3
 import base64
+import io
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
+from PIL import Image
+
 
 # Configuration de la page
 st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wide")
@@ -310,7 +313,10 @@ class TursoAdapter:
             if isinstance(p, int): args.append({"type": "integer", "value": str(p)})
             elif isinstance(p, float): args.append({"type": "float", "value": str(p)})
             elif p is None: args.append({"type": "null"})
-            else: args.append({"type": "text", "value": str(p)})
+            else: 
+                # C'EST CETTE LIGNE QUI TUE LE BUG MEMORYVIEW :
+                # Tout le reste est transformé de force en texte pur str()
+                args.append({"type": "text", "value": str(p)})
                 
         payload = {
             "requests": [
@@ -419,10 +425,27 @@ if "db_ready" not in st.session_state:
     initialiser_structure_base()
     st.session_state.db_ready = True
 
-# Helper function pour encoder les images en texte (Base64)
 def encoder_image(fichier_upload):
     if fichier_upload is not None:
-        return base64.b64encode(fichier_upload.getvalue()).decode('utf-8')
+        try:
+            # 1. On ouvre la photo prise par le téléphone
+            img = Image.open(fichier_upload)
+            
+            # 2. On la redimensionne (max 800x800 pixels pour garder de la qualité mais un petit poids)
+            img.thumbnail((800, 800))
+            
+            # 3. Si c'est un PNG transparent, on lui met un fond blanc pour le transformer en JPEG
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+                
+            # 4. On sauvegarde l'image compressée dans un fichier temporaire en mémoire
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=75)
+            
+            # 5. On transforme ce petit JPEG en texte pur pour que Turso l'accepte sans planter
+            return base64.b64encode(buffer.getvalue()).decode('utf-8')
+        except Exception as e:
+            return ""
     return ""
 
 # Algorithme de nettoyage automatique + archivage
