@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import sqlite3
+import base64
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -9,7 +10,7 @@ st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wi
 
 VOTRE_LIEN_ACTUEL = st.secrets["APP_URL"]
 
-# CSS PC/Téléphone
+# CSS PC/Téléphone (Inchangé)
 st.markdown("""
 <style>
 /* Reset et utilitaires */
@@ -365,6 +366,32 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS rappels_personnels (id INTEGER PRIMARY KEY AUTOINCREMENT, utilisateur TEXT, texte TEXT, date_creation_brute TEXT)")
     
+    # NOUVELLE TABLE SAV
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sav (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date_reception TEXT,
+            nom_client TEXT,
+            prenom_client TEXT,
+            adresse TEXT,
+            tel TEXT,
+            mail TEXT,
+            designation_outil TEXT,
+            ref_fournisseur TEXT,
+            ref_itek TEXT,
+            nom_fournisseur TEXT,
+            motif_defaut TEXT,
+            num_facture TEXT,
+            photo_1 TEXT,
+            photo_2 TEXT,
+            photo_3 TEXT,
+            photo_facture TEXT,
+            statut TEXT DEFAULT 'En cours',
+            cree_par TEXT,
+            date_creation_brute TEXT
+        )
+    """)
+
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
     try: cursor.execute("ALTER TABLE planning ADD COLUMN commentaire TEXT DEFAULT ''")
@@ -392,6 +419,11 @@ if "db_ready" not in st.session_state:
     initialiser_structure_base()
     st.session_state.db_ready = True
 
+# Helper function pour encoder les images en texte (Base64)
+def encoder_image(fichier_upload):
+    if fichier_upload is not None:
+        return base64.b64encode(fichier_upload.getvalue()).decode('utf-8')
+    return ""
 
 # Algorithme de nettoyage automatique + archivage
 @st.cache_data(ttl=60)
@@ -401,7 +433,6 @@ def nettoyer_et_archiver_data():
         heure_actuelle = now_paris.hour
         date_actuelle_str = now_paris.strftime("%Y-%m-%d %H:%M:%S")
         
-        # Nettoyage des mémos personnels datant de plus de 7 jours
         il_y_a_une_semaine = (now_paris - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("DELETE FROM rappels_personnels WHERE date_creation_brute < ?", (il_y_a_une_semaine,))
 
@@ -495,7 +526,8 @@ with st.sidebar:
         
     st.write("---")
     st.title("🗺️ Menu Principal")
-    liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat", "📌 Mes Rappels"]
+    # AJOUT DE L'ONGLET SAV ICI
+    liste_pages = ["📋 Planning de l'équipe", "🛠️ SAV & Réparations", "💬 Zone Tchat", "📌 Mes Rappels"]
     if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
@@ -651,7 +683,6 @@ if page == "📋 Planning de l'équipe":
                     st.markdown(f'<div class="pc-only" style="text-align: center; font-weight: 600; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
                 
                 with cols[2]:
-                    # Note technique : ajout de la classe .mob-spacer pour pouvoir cibler et détruire ce bloc fantôme en CSS PC
                     st.markdown('<div class="mob-only mob-spacer" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Ouvrir)</span></div>', unsafe_allow_html=True)
                     limite_caracteres = 30
                     quoi_affiche = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
@@ -729,8 +760,130 @@ if page == "📋 Planning de l'équipe":
 
     afficher_tableau_taches(filtre_statut)
 
+# -------------------------------------------------------------
+# PAGE NOUVELLE : SAV ET REPARATIONS
+# -------------------------------------------------------------
+elif page == "🛠️ SAV & Réparations":
+    st.title("🛠️ Espace SAV & Réparations")
+    
+    onglet_nouveau, onglet_suivi = st.tabs(["📝 Créer un dossier SAV", "📂 Suivi des dossiers existants"])
 
-# Page 2 Tchat de groupe et Tchat privé
+    # SOUS-ONGLET 1 : LE GRAND FORMULAIRE
+    with onglet_nouveau:
+        st.markdown("Veuillez remplir les informations du client. **(Sur mobile, les boutons 'Parcourir' ouvriront l'appareil photo)**.")
+        
+        with st.form("form_nouveau_sav", clear_on_submit=True):
+            # Ligne 1 : Info Client
+            st.subheader("👤 Informations Client")
+            col1, col2 = st.columns(2)
+            sav_date = col1.date_input("Date de réception")
+            sav_nom = col2.text_input("Nom du client *")
+            sav_prenom = col1.text_input("Prénom")
+            sav_tel = col2.text_input("Téléphone *")
+            sav_mail = col1.text_input("Email")
+            sav_adresse = col2.text_area("Adresse")
+
+            st.write("---")
+            # Ligne 2 : Info Matériel
+            st.subheader("🔧 Informations Matériel & Défaut")
+            col3, col4 = st.columns(2)
+            sav_outil = col3.text_input("Désignation outil *")
+            sav_motif = col4.text_area("Motif / Description défaut *")
+            
+            sav_nom_fournisseur = col3.text_input("Nom fournisseur")
+            sav_ref_fournisseur = col4.text_input("Référence fournisseur")
+            sav_ref_itek = col3.text_input("Référence ITEK")
+
+            st.write("---")
+            # Ligne 3 : Facture
+            st.subheader("🧾 Facturation")
+            col5, col6 = st.columns(2)
+            sav_num_facture = col5.text_input("Numéro Facture client")
+            sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
+
+            st.write("---")
+            # Ligne 4 : Photos de l'outil
+            st.subheader("📷 Photos de l'outil (Max 3)")
+            col7, col8, col9 = st.columns(3)
+            sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
+            sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
+            sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
+
+            submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
+
+            if submit_sav:
+                if sav_nom and sav_tel and sav_outil and sav_motif:
+                    now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # Transformation des images en Base64 pour la base de données
+                    b64_p1 = encoder_image(sav_p1)
+                    b64_p2 = encoder_image(sav_p2)
+                    b64_p3 = encoder_image(sav_p3)
+                    b64_facture = encoder_image(sav_photo_facture)
+
+                    date_str = sav_date.strftime("%d/%m/%Y")
+
+                    cursor.execute("""
+                        INSERT INTO sav (
+                            date_reception, nom_client, prenom_client, adresse, tel, mail, 
+                            designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
+                            motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
+                            cree_par, date_creation_brute
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
+                          sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
+                          sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
+                          st.session_state.user, now_brute))
+                    
+                    conn.commit()
+                    st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
+                    st.rerun()
+                else:
+                    st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
+
+    # SOUS-ONGLET 2 : LE SUIVI
+    with onglet_suivi:
+        st.subheader("Dossiers clients enregistrés")
+        cursor.execute("SELECT * FROM sav ORDER BY date_creation_brute DESC")
+        dossiers_sav = cursor.fetchall()
+
+        if dossiers_sav:
+            for d in dossiers_sav:
+                # Récupération des infos depuis la BDD (attention à l'ordre des colonnes)
+                d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
+                
+                with st.expander(f"🛠️ Dossier #{d_id} - {d_outil} | Client : {d_nom} {d_prenom} | Statut : {d_statut}"):
+                    c1, c2 = st.columns(2)
+                    c1.markdown(f"**Reçu le :** {d_date} par {d_cree_par}")
+                    c1.markdown(f"**Contact :** {d_tel} / {d_mail}")
+                    c1.markdown(f"**Adresse :** {d_adresse}")
+                    
+                    c2.markdown(f"**Fournisseur :** {d_nom_f} (Réf: {d_ref_f})")
+                    c2.markdown(f"**Réf ITEK :** {d_ref_i}")
+                    c2.markdown(f"**Numéro Facture :** {d_num_fac}")
+                    
+                    st.info(f"**Motif du retour :**\n{d_motif}")
+
+                    # Affichage des photos si elles existent
+                    st.write("**Photos rattachées au dossier :**")
+                    col_p1, col_p2, col_p3, col_pfac = st.columns(4)
+                    
+                    if d_p1: col_p1.image(base64.b64decode(d_p1), caption="Défaut 1", use_container_width=True)
+                    if d_p2: col_p2.image(base64.b64decode(d_p2), caption="Défaut 2", use_container_width=True)
+                    if d_p3: col_p3.image(base64.b64decode(d_p3), caption="Défaut 3", use_container_width=True)
+                    if d_pfac: col_pfac.image(base64.b64decode(d_pfac), caption="Facture", use_container_width=True)
+
+                    if st.session_state.role == "Administrateur":
+                        st.write("---")
+                        if st.button("🗑️ Supprimer définitivement ce dossier", key=f"del_sav_{d_id}"):
+                            cursor.execute("DELETE FROM sav WHERE id = ?", (d_id,))
+                            conn.commit()
+                            st.rerun()
+        else:
+            st.info("Aucun dossier SAV en cours pour le moment.")
+
+
+# Page 3 Tchat de groupe et Tchat privé
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
     st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
@@ -791,7 +944,7 @@ elif page == "💬 Zone Tchat":
             conn.commit()
             st.rerun()
 
-# Page 3 Mes Rappels Personnels
+# Page 4 Mes Rappels Personnels
 elif page == "📌 Mes Rappels":
     st.title("📌 Mes Rappels Personnels")
     st.caption("Espace privé. Vos notes et commentaires sont automatiquement supprimés après 7 jours.")
@@ -830,7 +983,7 @@ elif page == "📌 Mes Rappels":
         st.info("Vous n'avez aucun rappel actif pour le moment.")
 
 
-# Page 4 Archives (Administrateur uniquement)
+# Page 5 Archives (Administrateur uniquement)
 elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
     st.title("🗄️ Archives Administrateur")
     
