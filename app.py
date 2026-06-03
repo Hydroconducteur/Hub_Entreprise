@@ -502,14 +502,12 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.cell(90, 6, f"Fournisseur : {f_nom}", ln=1)
     
     pdf.set_font("helvetica", "", 11)
-    
-    # On sauvegarde la position Y de départ pour bien aligner les deux colonnes
     y_start = pdf.get_y()
     
     # Colonne Gauche - Adresse MAUPU complète
     pdf.set_xy(10, y_start)
     pdf.cell(100, 6, "3 rue du Mail Est", ln=1)
-    pdf.cell(100, 6, "45170 Neuville-Aux-Bois", ln=1) # Ajout de la ville et CP
+    pdf.cell(100, 6, "45170 Neuville-Aux-Bois", ln=1)
     pdf.cell(100, 6, "02 38 91 00 15", ln=1)
     pdf.cell(100, 6, "quincaillerie.maupu@cegetel.net", ln=1)
     y_gauche_fin = pdf.get_y()
@@ -518,7 +516,6 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.set_xy(110, y_start)
     pdf.multi_cell(90, 6, f_adresse if f_adresse else "Adresse non renseignée")
     
-    # On descend un peu sous l'adresse du fournisseur pour le tel et le mail
     y_apres_adresse = pdf.get_y()
     pdf.set_xy(110, y_apres_adresse + 2) 
     pdf.cell(90, 6, f"Tel : {f_tel}", ln=1)
@@ -527,14 +524,14 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.cell(90, 6, f"Email : {f_mail}", ln=1)
     y_droite_fin = pdf.get_y()
     
-    # On reprend sous la colonne la plus longue pour éviter que le texte se superpose
-    pdf.set_y(max(y_gauche_fin, y_droite_fin) + 15)
+    # On se positionne sous la colonne la plus longue
+    pdf.set_y(max(y_gauche_fin, y_droite_fin) + 8)
     
     # --- TITRE DE LA DEMANDE ---
     pdf.set_font("helvetica", "B", 16)
     pdf.set_fill_color(240, 240, 240)
-    pdf.cell(0, 12, f"OBJET : {type_demande.upper()}", border=1, ln=1, align="C", fill=True)
-    pdf.ln(10)
+    pdf.cell(0, 11, f"OBJET : {type_demande.upper()}", border=1, ln=1, align="C", fill=True)
+    pdf.ln(6)
     
     # --- INFORMATIONS MATÉRIEL ---
     pdf.set_font("helvetica", "B", 12)
@@ -543,40 +540,73 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.set_font("helvetica", "", 11)
     pdf.cell(0, 6, f"- Designation de l'outil : {outil}", ln=1)
     
-    # Affichage conditionnel de la référence
     if ref_produit:
         pdf.cell(0, 6, f"- Reference du produit : {ref_produit}", ln=1)
         
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
-    pdf.ln(10)
+    pdf.ln(4)
     
-    # --- INTÉGRATION DES PHOTOS ---
-    def ajouter_photo_pdf(b64_string, titre):
-        if b64_string:
+    # --- 1. PREUVE D'ACHAT (FACTURE) ---
+    if p_fac:
+        try:
+            img_data = base64.b64decode(p_fac.split("base64,")[-1])
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                tmp.write(img_data)
+                tmp_path = tmp.name
+            
+            pdf.set_font("helvetica", "B", 10)
+            pdf.cell(0, 6, "1. Preuve d'achat (Facture) :", ln=1)
+            pdf.image(tmp_path, w=40) # Taille réduite à 40mm pour économiser de l'espace vertical
+            pdf.ln(4)
+            os.unlink(tmp_path)
+        except Exception:
+            pass
+            
+    # --- 2. PHOTOS DES DÉFAUTS (ALIGNÉES CÔTE À CÔTE) ---
+    defauts = [p1, p2, p3]
+    valid_defauts = []
+    
+    # Décodage et enregistrement temporaire des photos de défauts présentes
+    for p in defauts:
+        if p:
             try:
-                img_data = base64.b64decode(b64_string)
+                img_data = base64.b64decode(p.split("base64,")[-1])
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                     tmp.write(img_data)
-                    tmp_path = tmp.name
-                
-                if pdf.get_y() > 200:
-                    pdf.add_page()
-                    
-                pdf.set_font("helvetica", "B", 10)
-                pdf.cell(0, 8, titre, ln=1)
-                pdf.image(tmp_path, w=80)
-                pdf.ln(5)
-                
-                os.unlink(tmp_path)
+                    valid_defauts.append(tmp.name)
             except Exception:
                 pass
 
-    ajouter_photo_pdf(p_fac, "1. Preuve d'achat (Facture) :")
-    ajouter_photo_pdf(p1, "2. Photo du defaut 1 :")
-    ajouter_photo_pdf(p2, "3. Photo du defaut 2 :")
-    ajouter_photo_pdf(p3, "4. Photo du defaut 3 :")
-    
-    # Génération sécurisée en format bytes (infaillible)
+    if valid_defauts:
+        pdf.set_font("helvetica", "B", 10)
+        pdf.cell(0, 6, "2. Photos des defauts constates :", ln=1)
+        
+        num_imgs = len(valid_defauts)
+        gap = 4 # Espace en mm entre les photos
+        
+        # Calcul automatique de la largeur de chaque image (Max disponible : 190mm)
+        img_w = (190 - (gap * (num_imgs - 1))) / num_imgs
+        
+        # On limite la taille si une seule image est présente pour éviter qu'elle soit géante
+        if img_w > 55: 
+            img_w = 55 
+            
+        x_start = 10
+        y_start = pdf.get_y()
+        
+        # Placement horizontal chirurgical
+        for i, tmp_path in enumerate(valid_defauts):
+            x_pos = x_start + i * (img_w + gap)
+            pdf.image(tmp_path, x=x_pos, y=y_start, w=img_w)
+        
+        # Nettoyage immédiat des fichiers temporaires
+        for tmp_path in valid_defauts:
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+
+    # --- GÉNÉRATION EN BYTES SÉCURISÉE ---
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
         pdf_path = tmp_pdf.name
         
@@ -588,7 +618,6 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     os.unlink(pdf_path)
     
     return pdf_bytes
-
 
 # Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
