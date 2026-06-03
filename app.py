@@ -1237,8 +1237,9 @@ elif page == "📦 Demande Fournisseur":
   # 2. Affichage en colonnes
         col_gauche, col_droite = st.columns(2)
         
-        with col_gauche:
+       with col_gauche:
             st.subheader("🏢 Expéditeur")
+            # Attention : il y a deux espaces à la fin de chaque ligne ci-dessous !
             st.markdown("""
             **Quincaillerie MAUPU** 3 rue du Mail Est  
             45170 Neuville-Aux-Bois  
