@@ -492,7 +492,7 @@ from fpdf import FPDF
 import tempfile
 import os
 
-def generer_pdf_fournisseur(outil, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac):
+def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac):
     pdf = FPDF()
     pdf.add_page()
     
@@ -502,26 +502,36 @@ def generer_pdf_fournisseur(outil, motif, f_nom, f_adresse, f_tel, f_mail, type_
     pdf.cell(90, 6, f"Fournisseur : {f_nom}", ln=1)
     
     pdf.set_font("helvetica", "", 11)
-    pdf.cell(100, 6, "3 rue du Mail Est", ln=0)
     
-    # Gestion de l'adresse fournisseur sur plusieurs lignes
-    y_courant = pdf.get_y()
-    pdf.set_xy(110, y_courant)
+    # On sauvegarde la position Y de départ pour bien aligner les deux colonnes
+    y_start = pdf.get_y()
+    
+    # Colonne Gauche - Adresse MAUPU complète
+    pdf.set_xy(10, y_start)
+    pdf.cell(100, 6, "3 rue du Mail Est", ln=1)
+    pdf.cell(100, 6, "45170 Neuville-Aux-Bois", ln=1) # Ajout de la ville et CP
+    pdf.cell(100, 6, "02 38 91 00 15", ln=1)
+    pdf.cell(100, 6, "quincaillerie.maupu@cegetel.net", ln=1)
+    y_gauche_fin = pdf.get_y()
+    
+    # Colonne Droite - Informations Fournisseur
+    pdf.set_xy(110, y_start)
     pdf.multi_cell(90, 6, f_adresse if f_adresse else "Adresse non renseignée")
     
-    pdf.set_xy(10, y_courant + 6)
-    pdf.cell(100, 6, "02 38 91 00 15", ln=0)
-    pdf.set_xy(110, y_courant + 18) # On descend un peu pour le tel
+    # On descend un peu sous l'adresse du fournisseur pour le tel et le mail
+    y_apres_adresse = pdf.get_y()
+    pdf.set_xy(110, y_apres_adresse + 2) 
     pdf.cell(90, 6, f"Tel : {f_tel}", ln=1)
     
-    pdf.cell(100, 6, "quincaillerie.maupu@cegetel.net", ln=0)
+    pdf.set_xy(110, pdf.get_y())
     pdf.cell(90, 6, f"Email : {f_mail}", ln=1)
+    y_droite_fin = pdf.get_y()
     
-    pdf.ln(15)
+    # On reprend sous la colonne la plus longue pour éviter que le texte se superpose
+    pdf.set_y(max(y_gauche_fin, y_droite_fin) + 15)
     
     # --- TITRE DE LA DEMANDE ---
     pdf.set_font("helvetica", "B", 16)
-    # Fond gris clair pour faire propre
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 12, f"OBJET : {type_demande.upper()}", border=1, ln=1, align="C", fill=True)
     pdf.ln(10)
@@ -532,6 +542,11 @@ def generer_pdf_fournisseur(outil, motif, f_nom, f_adresse, f_tel, f_mail, type_
     
     pdf.set_font("helvetica", "", 11)
     pdf.cell(0, 6, f"- Designation de l'outil : {outil}", ln=1)
+    
+    # Affichage conditionnel de la référence
+    if ref_produit:
+        pdf.cell(0, 6, f"- Reference du produit : {ref_produit}", ln=1)
+        
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
     pdf.ln(10)
     
@@ -539,43 +554,41 @@ def generer_pdf_fournisseur(outil, motif, f_nom, f_adresse, f_tel, f_mail, type_
     def ajouter_photo_pdf(b64_string, titre):
         if b64_string:
             try:
-                # On décode la base64 et on la sauvegarde dans un fichier temporaire pour le PDF
                 img_data = base64.b64decode(b64_string)
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                     tmp.write(img_data)
                     tmp_path = tmp.name
                 
-                # Vérification de l'espace restant sur la page pour ne pas couper la photo
                 if pdf.get_y() > 200:
                     pdf.add_page()
                     
                 pdf.set_font("helvetica", "B", 10)
                 pdf.cell(0, 8, titre, ln=1)
-                pdf.image(tmp_path, w=80) # Largeur de 80mm
+                pdf.image(tmp_path, w=80)
                 pdf.ln(5)
                 
-                os.unlink(tmp_path) # Nettoyage du fichier temporaire
+                os.unlink(tmp_path)
             except Exception:
-                pass # Si l'image est corrompue, on passe
+                pass
 
     ajouter_photo_pdf(p_fac, "1. Preuve d'achat (Facture) :")
     ajouter_photo_pdf(p1, "2. Photo du defaut 1 :")
     ajouter_photo_pdf(p2, "3. Photo du defaut 2 :")
     ajouter_photo_pdf(p3, "4. Photo du defaut 3 :")
     
-   # REMPLACE PAR CECI :
-    # Méthode infaillible (fonctionne avec TOUTES les versions de fpdf)
+    # Génération sécurisée en format bytes (infaillible)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
         pdf_path = tmp_pdf.name
         
-    pdf.output(pdf_path) # Sauvegarde sécurisée sur un fichier temporaire
+    pdf.output(pdf_path)
     
     with open(pdf_path, "rb") as f:
-        pdf_bytes = f.read() # Lecture propre au format 'bytes'
+        pdf_bytes = f.read()
         
-    os.unlink(pdf_path) # Nettoyage du fichier temporaire du serveur
+    os.unlink(pdf_path)
     
     return pdf_bytes
+
 
 # Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
@@ -1221,13 +1234,14 @@ elif page == "📦 Demande Fournisseur":
         
         st.write("---")
         
-        # 2. Affichage en colonnes comme demandé
+  # 2. Affichage en colonnes
         col_gauche, col_droite = st.columns(2)
         
         with col_gauche:
             st.subheader("🏢 Expéditeur")
             st.markdown("""
             **Quincaillerie MAUPU** 3 rue du Mail Est  
+            45170 Neuville-Aux-Bois  
             02 38 91 00 15  
             quincaillerie.maupu@cegetel.net
             """)
@@ -1235,6 +1249,9 @@ elif page == "📦 Demande Fournisseur":
             st.write("---")
             st.subheader("🔧 Matériel concerné (Issu du SAV)")
             st.info(f"**Outil :** {d_outil}\n\n**Défaut :** {d_motif}")
+            
+            # --- NOUVEAUTÉ : Champ facultatif pour la référence ---
+            ref_produit = st.text_input("🏷️ Référence du produit (Facultatif)", placeholder="Ex : REF-45892A")
             
         with col_droite:
             st.subheader("🏭 Destinataire (Fournisseur)")
@@ -1246,7 +1263,6 @@ elif page == "📦 Demande Fournisseur":
             
             st.write("---")
             st.subheader("📋 Nature de la demande")
-            # J'utilise des "radio" plutôt que des cases à cocher pour forcer un seul choix possible
             type_demande = st.radio("Sélectionnez l'action souhaitée :", ["Demande d'échange", "Demande d'avoir"])
             
         st.write("---")
@@ -1257,12 +1273,21 @@ elif page == "📦 Demande Fournisseur":
         
         if st.button("⚙️ Préparer le document PDF", use_container_width=True):
             with st.spinner("Génération du PDF en cours, traitement des images..."):
+                # On ajoute ref_produit en 2e position des paramètres !
                 pdf_bytes = generer_pdf_fournisseur(
-                    d_outil, d_motif, f_nom, f_adresse, f_tel, f_mail, 
+                    d_outil, ref_produit, d_motif, f_nom, f_adresse, f_tel, f_mail, 
                     type_demande, d_p1, d_p2, d_p3, d_pfac
                 )
                 
             st.success("✅ Le document est prêt !")
+            
+            st.download_button(
+                label="⬇️ Télécharger la Demande Fournisseur (PDF)",
+                data=pdf_bytes,
+                file_name=f"Demande_{type_demande.replace(' ', '_')}_{d_outil.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
             
             # Le bouton natif Streamlit pour télécharger des fichiers
             st.download_button(
