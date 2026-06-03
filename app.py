@@ -579,7 +579,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
 
     if valid_defauts:
         pdf.set_font("helvetica", "B", 10)
-        pdf.cell(0, 6, "2. Photos des defauts constates :", ln=1)
+        pdf.cell(0, 6, "2. Photos Plaques Signalitique constates :", ln=1)
         
         num_imgs = len(valid_defauts)
         gap = 4 # Espace en mm entre les photos
