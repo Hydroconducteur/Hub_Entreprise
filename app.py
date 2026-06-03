@@ -928,13 +928,33 @@ elif page == "🛠️ SAV & Réparations":
         with st.form("form_nouveau_sav", clear_on_submit=True):
             # Ligne 1 : Info Client
             st.subheader("👤 Informations Client")
-            col1, col2 = st.columns(2)
-            sav_date = col1.date_input("Date de réception")
-            sav_nom = col2.text_input("Nom du client *")
-            sav_prenom = col1.text_input("Prénom")
-            sav_tel = col2.text_input("Téléphone *")
-            sav_mail = col1.text_input("Email")
-            sav_adresse = col2.text_area("Adresse")
+
+# Ligne 1 : Date de réception (déjà au bon endroit)
+# (Garde ta variable existante si elle s'appelle autrement, ex: c_date)
+date_reception = st.date_input("📅 Date de réception", datetime.now(ZoneInfo("Europe/Paris")))
+
+# Ligne 2 : Nom et Prénom sur la même ligne
+col_nom, col_prenom = st.columns(2)
+with col_nom:
+    client_nom = st.text_input("👤 Nom")
+with col_prenom:
+    client_prenom = st.text_input("👤 Prénom")
+
+# Ligne 3 : Adresse, Code Postal et Ville sur la même ligne
+# On donne plus de largeur (3) à l'adresse qu'au CP (1) et à la Ville (2) pour que ce soit joli
+col_adr, col_cp, col_ville = st.columns([3, 1, 2])
+with col_adr:
+    client_adresse = st.text_input("🏠 Adresse")
+with col_cp:
+    client_cp = st.text_input("📮 Code Postal")
+with col_ville:
+    client_ville = st.text_input("🏙️ Ville")
+
+# Ligne 4 : Téléphone
+client_tel = st.text_input("📞 Téléphone")
+
+# Ligne 5 : Email
+client_email = st.text_input("📧 Email")
 
             st.write("---")
             # Ligne 2 : Info Matériel
