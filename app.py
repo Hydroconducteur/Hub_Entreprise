@@ -1007,35 +1007,35 @@ with col_mat_droite:
 
     submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
 
-        if submit_sav:
-            if sav_nom and sav_tel and sav_outil and sav_motif:
-                now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+    if submit_sav:
+        if sav_nom and sav_tel and sav_outil and sav_motif:
+            now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                     
-                # Transformation des images en Base64 pour la base de données
-                b64_p1 = encoder_image(sav_p1)
-                b64_p2 = encoder_image(sav_p2)
-                b64_p3 = encoder_image(sav_p3)
-                b64_facture = encoder_image(sav_photo_facture)
+            # Transformation des images en Base64 pour la base de données
+            b64_p1 = encoder_image(sav_p1)
+            b64_p2 = encoder_image(sav_p2)
+            b64_p3 = encoder_image(sav_p3)
+            b64_facture = encoder_image(sav_photo_facture)
 
-                date_str = sav_date.strftime("%d/%m/%Y")
+            date_str = sav_date.strftime("%d/%m/%Y")
 
-                    cursor.execute("""
-                        INSERT INTO sav (
-                            date_reception, nom_client, prenom_client, adresse, tel, mail, 
-                            designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
-                            motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
-                            cree_par, date_creation_brute
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
-                          sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
-                          sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
-                          st.session_state.user, now_brute))
+                cursor.execute("""
+                    INSERT INTO sav (
+                        date_reception, nom_client, prenom_client, adresse, tel, mail, 
+                        designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
+                        motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
+                        cree_par, date_creation_brute
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
+                        sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
+                        sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
+                        st.session_state.user, now_brute))
                     
-                    conn.commit()
-                    st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
-                    st.rerun()
-                else:
-                    st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
+                conn.commit()
+                st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
+                st.rerun()
+            else:
+                st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
 
     # SOUS-ONGLET 2 : LE SUIVI
     with onglet_suivi:
