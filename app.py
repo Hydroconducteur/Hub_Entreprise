@@ -563,8 +563,19 @@ def generer_pdf_fournisseur(outil, motif, f_nom, f_adresse, f_tel, f_mail, type_
     ajouter_photo_pdf(p2, "3. Photo du defaut 2 :")
     ajouter_photo_pdf(p3, "4. Photo du defaut 3 :")
     
-    # fpdf2 renvoie directement un bytearray prêt à être téléchargé
-    return pdf.output()
+   # REMPLACE PAR CECI :
+    # Méthode infaillible (fonctionne avec TOUTES les versions de fpdf)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
+        pdf_path = tmp_pdf.name
+        
+    pdf.output(pdf_path) # Sauvegarde sécurisée sur un fichier temporaire
+    
+    with open(pdf_path, "rb") as f:
+        pdf_bytes = f.read() # Lecture propre au format 'bytes'
+        
+    os.unlink(pdf_path) # Nettoyage du fichier temporaire du serveur
+    
+    return pdf_bytes
 
 # Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
