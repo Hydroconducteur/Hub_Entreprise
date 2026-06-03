@@ -371,34 +371,49 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS rappels_personnels (id INTEGER PRIMARY KEY AUTOINCREMENT, utilisateur TEXT, texte TEXT, date_creation_brute TEXT)")
     
-        # Création de la table SAV avec les nouveaux champs
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS sav (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date_reception TEXT,
-        nom_client TEXT,
-        prenom_client TEXT,
-        adresse TEXT,
-        tel TEXT,
-        mail TEXT,
-        designation_outil TEXT,
-        ref_fournisseur TEXT,
-        ref_itek TEXT,
-        nom_fournisseur TEXT,
-        motif_defaut TEXT,
-        num_facture TEXT,
-        date_achat TEXT,        -- Nouvelle colonne
-        sous_garantie TEXT,     -- Nouvelle colonne
-        photo_1 TEXT,
-        photo_2 TEXT,
-        photo_3 TEXT,
-        photo_facture TEXT,
-        statut TEXT DEFAULT 'En attente',
-        cree_par TEXT,
-        date_creation_brute TEXT
-    )
-    """)
-    conn.commit()
+        # Création de la table SAV avec TOUS les champs
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS sav (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date_reception TEXT,
+    nom_client TEXT,
+    prenom_client TEXT,
+    adresse TEXT,
+    tel TEXT,
+    mail TEXT,
+    designation_outil TEXT,
+    ref_fournisseur TEXT,
+    ref_itek TEXT,
+    nom_fournisseur TEXT,
+    motif_defaut TEXT,
+    num_facture TEXT,       -- La fameuse colonne manquante
+    date_achat TEXT,        -- Nouvelle colonne
+    sous_garantie TEXT,     -- Nouvelle colonne
+    photo_1 TEXT,
+    photo_2 TEXT,
+    photo_3 TEXT,
+    photo_facture TEXT,
+    statut TEXT DEFAULT 'En attente',
+    cree_par TEXT,
+    date_creation_brute TEXT
+)
+""")
+conn.commit()
+
+# SÉCURITÉ / MIGRATION AUTOMATIQUE : 
+# On boucle sur les colonnes récentes pour s'assurer qu'elles existent bien dans la base actuelle
+colonnes_a_verifier = [
+    "num_facture TEXT",
+    "date_achat TEXT",
+    "sous_garantie TEXT"
+]
+
+for col in colonnes_a_verifier:
+    try:
+        cursor.execute(f"ALTER TABLE sav ADD COLUMN {col};")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # Si l'erreur se déclenche, c'est que la colonne existe déjà, on ignore et on continue
     
     # SÉCURITÉ / MIGRATION AUTOMATIQUE : 
     # Ajoute les colonnes si la base de données existe déjà sans elles
