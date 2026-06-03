@@ -371,31 +371,48 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS rappels_personnels (id INTEGER PRIMARY KEY AUTOINCREMENT, utilisateur TEXT, texte TEXT, date_creation_brute TEXT)")
     
-    # NOUVELLE TABLE SAV
+        # Création de la table SAV avec les nouveaux champs
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sav (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date_reception TEXT,
-            nom_client TEXT,
-            prenom_client TEXT,
-            adresse TEXT,
-            tel TEXT,
-            mail TEXT,
-            designation_outil TEXT,
-            ref_fournisseur TEXT,
-            ref_itek TEXT,
-            nom_fournisseur TEXT,
-            motif_defaut TEXT,
-            num_facture TEXT,
-            photo_1 TEXT,
-            photo_2 TEXT,
-            photo_3 TEXT,
-            photo_facture TEXT,
-            statut TEXT DEFAULT 'En cours',
-            cree_par TEXT,
-            date_creation_brute TEXT
-        )
+    CREATE TABLE IF NOT EXISTS sav (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date_reception TEXT,
+        nom_client TEXT,
+        prenom_client TEXT,
+        adresse TEXT,
+        tel TEXT,
+        mail TEXT,
+        designation_outil TEXT,
+        ref_fournisseur TEXT,
+        ref_itek TEXT,
+        nom_fournisseur TEXT,
+        motif_defaut TEXT,
+        num_facture TEXT,
+        date_achat TEXT,        -- Nouvelle colonne
+        sous_garantie TEXT,     -- Nouvelle colonne
+        photo_1 TEXT,
+        photo_2 TEXT,
+        photo_3 TEXT,
+        photo_facture TEXT,
+        statut TEXT DEFAULT 'En attente',
+        cree_par TEXT,
+        date_creation_brute TEXT
+    )
     """)
+    conn.commit()
+    
+    # SÉCURITÉ / MIGRATION AUTOMATIQUE : 
+    # Ajoute les colonnes si la base de données existe déjà sans elles
+    try:
+        cursor.execute("ALTER TABLE sav ADD COLUMN date_achat TEXT;")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # La colonne existe déjà, on ne fait rien
+    
+    try:
+        cursor.execute("ALTER TABLE sav ADD COLUMN sous_garantie TEXT;")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # La colonne existe déjà, on ne fait rien
 
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
@@ -931,14 +948,14 @@ elif page == "🛠️ SAV & Réparations":
             # Date de réception
             date_reception = st.date_input("📅 Date de réception", datetime.now(ZoneInfo("Europe/Paris")))
 
-            # Nom et Prénom
+            # Nom et Prénom sur la même ligne
             col_nom, col_prenom = st.columns(2)
             with col_nom:
                 client_nom = st.text_input("👤 Nom")
             with col_prenom:
                 client_prenom = st.text_input("👤 Prénom")
             
-            # Adresse, Code Postal et Ville
+            # Adresse, Code Postal et Ville sur la même ligne
             col_adr, col_cp, col_ville = st.columns([3, 1, 2])
             with col_adr:
                 client_adresse = st.text_input("🏠 Adresse")
@@ -959,20 +976,21 @@ elif page == "🛠️ SAV & Réparations":
             # 2. INFO MATÉRIEL & DÉFAUTS
             st.subheader("🔧 Informations Matériel et Défauts")
 
+            # On sépare en deux grandes colonnes (Gauche et Droite)
             col_mat_gauche, col_mat_droite = st.columns(2)
 
             with col_mat_gauche:
                 # Désignation
                 materiel_designation = st.text_input("📦 Désignation")
                 
-                # Référence ITEK et Quantité
+                # Référence ITEK et Quantité sur la même ligne
                 col_itek, col_qte = st.columns([3, 1])
                 with col_itek:
                     ref_itek = st.text_input("🏷️ Référence ITEK")
                 with col_qte:
                     quantite = st.number_input("🔢 Quantité", min_value=1, value=1, step=1)
                     
-                # Référence Fournisseur et Nom Fournisseur
+                # Référence Fournisseur et Nom Fournisseur sur la même ligne
                 col_ref_fourn, col_nom_fourn = st.columns(2)
                 with col_ref_fourn:
                     ref_fournisseur = st.text_input("🏷️ Référence Fournisseur")
@@ -983,7 +1001,7 @@ elif page == "🛠️ SAV & Réparations":
                 num_serie = st.text_input("🔢 N° de série")
 
             with col_mat_droite:
-                # Motif / Description
+                # Motif (Description et défaut)
                 motif_defaut = st.text_area("📋 Motif (Description et défaut)", height=115) 
                 
                 # Accessoires fournis
@@ -991,7 +1009,7 @@ elif page == "🛠️ SAV & Réparations":
 
             st.write("---")
             
-            # 3. FACTURATION & GARANTIE (Séparé du matériel)
+            # 3. CATEGORIE APPART : FACTURATION & GARANTIE
             st.subheader("🧾 Facturation & Garantie")
             
             col_fac1, col_fac2 = st.columns(2)
@@ -1014,7 +1032,7 @@ elif page == "🛠️ SAV & Réparations":
             submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
 
             if submit_sav:
-                # Modifie la condition si tu veux aussi rendre obligatoires les nouveaux champs
+                # Validation avec les bons noms de variables du formulaire
                 if client_nom and client_tel and materiel_designation and motif_defaut:
                     now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                                         
@@ -1026,19 +1044,22 @@ elif page == "🛠️ SAV & Réparations":
 
                     date_reception_str = date_reception.strftime("%d/%m/%Y")
                     date_achat_str = date_achat.strftime("%d/%m/%Y")
+                    adresse_complete = f"{client_adresse} {client_cp} {client_ville}".strip()
 
-                    # Ajout des champs date_achat et sous_garantie dans la requête SQL
+                    # Insertion sécurisée avec les nouvelles colonnes insérées au bon endroit
                     cursor.execute("""
                         INSERT INTO sav (
                             date_reception, nom_client, prenom_client, adresse, tel, mail, 
                             designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
-                            motif_defaut, num_facture, date_achat, sous_garantie, photo_1, photo_2, photo_3, photo_facture, 
+                            motif_defaut, num_facture, date_achat, sous_garantie, 
+                            photo_1, photo_2, photo_3, photo_facture, 
                             cree_par, date_creation_brute
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (date_reception_str, client_nom, client_prenom, client_adresse, client_tel, client_email, 
-                            materiel_designation, ref_fournisseur, ref_itek, nom_fournisseur, 
-                            motif_defaut, sav_num_facture, date_achat_str, sous_garantie, b64_p1, b64_p2, b64_p3, b64_facture, 
-                            st.session_state.user, now_brute))
+                    """, (date_reception_str, client_nom, client_prenom, adresse_complete, client_tel, client_email, 
+                          materiel_designation, ref_fournisseur, ref_itek, nom_fournisseur, 
+                          motif_defaut, sav_num_facture, date_achat_str, sous_garantie, 
+                          b64_p1, b64_p2, b64_p3, b64_facture, 
+                          st.session_state.user, now_brute))
                         
                     conn.commit()
                     st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
@@ -1046,11 +1067,11 @@ elif page == "🛠️ SAV & Réparations":
                 else:
                     st.error("❌ Merci de remplir au minimum les champs obligatoires : Nom, Tel, Désignation et Motif.")
 
-   # SOUS-ONGLET 2 : LE SUIVI
+    # SOUS-ONGLET 2 : LE SUIVI DES DOSSIERS
     with onglet_suivi:
         st.subheader("Dossiers clients enregistrés")
         
-        # On liste explicitement les colonnes pour garantir l'ordre au déballage
+        # Sélection explicite ordonnée des colonnes pour éviter tout bug de déballage (Unpacking Error)
         cursor.execute("""
             SELECT 
                 id, date_reception, nom_client, prenom_client, adresse, tel, mail, 
@@ -1064,7 +1085,7 @@ elif page == "🛠️ SAV & Réparations":
 
         if dossiers_sav:
             for d in dossiers_sav:
-                # Le déballage correspond maintenant à 100% à la requête ci-dessus
+                # Déballage strict correspondant exactement au SELECT ci-dessus
                 d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_date_achat, d_garantie, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
                 
                 with st.expander(f"🛠️ Dossier #{d_id} - {d_outil} | Client : {d_nom} {d_prenom} | Statut : {d_statut}"):
@@ -1097,286 +1118,3 @@ elif page == "🛠️ SAV & Réparations":
                             st.rerun()
         else:
             st.info("Aucun dossier SAV en cours pour le moment.")
-# Page 3 Tchat de groupe et Tchat privé
-elif page == "💬 Zone Tchat":
-    st.title("💬 Centre de Communication")
-    st.caption("Les messages restent ici de 8h à 20h, puis partent automatiquement en Archives.")
-    
-    cursor.execute("SELECT prenom FROM utilisateurs")
-    employes = [row[0] for row in cursor.fetchall()]
-    if "Christophe" not in employes: employes.append("Christophe")
-        
-    options_tchat = ["📢 Canal #Général"] + [f"🔒 Privé avec {emp}" for emp in employes if emp != st.session_state.user]
-    choix_tchat = st.selectbox("Discussion active :", options_tchat)
-    st.write("---")
-
-    @st.fragment(run_every=6)
-    def afficher_flux_messages(cible_tchat):
-        if cible_tchat == "📢 Canal #Général":
-            st.subheader("📢 Fil d'actualité Général")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE destinataire = 'Tous' ORDER BY id ASC")
-        else:
-            cible = cible_tchat.replace("🔒 Privé avec ", "")
-            st.subheader(f"🔒 Bulle privée avec {cible}")
-            cursor.execute("SELECT id, expediteur, texte, date_envoi, garder_permanent FROM tchat WHERE (expediteur = ? AND destinataire = ?) OR (expediteur = ? AND destinataire = ?) ORDER BY id ASC", (st.session_state.user, cible, cible, st.session_state.user))
-        
-        messages = cursor.fetchall()
-        zone_msg = st.container(height=380)
-        with zone_msg:
-            if messages:
-                for m in messages:
-                    id_msg, exp, txt, date, permanent = m
-                    
-                    base_largeur = [8.5, 0.75, 0.75] if st.session_state.role == "Administrateur" else [9.2, 0.8]
-                    cols_msg = st.columns(base_largeur, vertical_alignment="center")
-                    
-                    with cols_msg[0]:
-                        label_perm = " 📌 [Sauvegardé]" if permanent == 1 else ""
-                        st.chat_message("user" if exp == st.session_state.user else "assistant").write(f"**{'Vous' if exp == st.session_state.user else exp}** ({date}){label_perm} : {txt}")
-                    
-                    if cols_msg[1].button("📍" if permanent == 1 else "📌", key=f"pin_live_{id_msg}", help="Ne pas archiver", use_container_width=True):
-                        cursor.execute("UPDATE tchat SET garder_permanent = ? WHERE id = ?", (0 if permanent == 1 else 1, id_msg))
-                        conn.commit()
-                        st.rerun()
-                        
-                    if st.session_state.role == "Administrateur" and cols_msg[2].button("🗑️", key=f"del_live_{id_msg}", use_container_width=True):
-                        cursor.execute("DELETE FROM tchat WHERE id = ?", (id_msg,))
-                        conn.commit()
-                        st.rerun()
-            else:
-                st.caption("Aucun échange pour le moment.")
-
-    afficher_flux_messages(choix_tchat)
-
-    with st.form("form_msg", clear_on_submit=True):
-        col_txt, col_btn = st.columns([8.2, 1.8], vertical_alignment="center")
-        nouveau_msg = col_txt.text_input("Tapez votre message ici...", label_visibility="collapsed")
-        if col_btn.form_submit_button("Envoyer 🚀", use_container_width=True) and nouveau_msg.strip() != "":
-            dest = "Tous" if choix_tchat == "📢 Canal #Général" else choix_tchat.replace("🔒 Privé avec ", "")
-            now_paris = datetime.now(ZoneInfo("Europe/Paris"))
-            cursor.execute("INSERT INTO tchat (expediteur, destinataire, texte, date_envoi, date_creation_brute, garder_permanent) VALUES (?, ?, ?, ?, ?, 0)", (st.session_state.user, dest, nouveau_msg.strip(), now_paris.strftime("%H:%M"), now_paris.strftime("%Y-%m-%d %H:%M:%S")))
-            conn.commit()
-            st.rerun()
-
-# Page 4 Mes Rappels Personnels
-elif page == "📌 Mes Rappels":
-    st.title("📌 Mes Rappels Personnels")
-    st.caption("Espace privé. Vos notes et commentaires sont automatiquement supprimés après 7 jours.")
-
-    with st.form("form_rappel", clear_on_submit=True):
-        nouveau_rappel = st.text_area("📝 Ajouter un nouveau rappel / mémo :", help="Ex: Penser à charger l'outil B, prévenir un tel pour la livraison...")
-        if st.form_submit_button("Ajouter le rappel"):
-            if nouveau_rappel.strip():
-                now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
-                cursor.execute("INSERT INTO rappels_personnels (utilisateur, texte, date_creation_brute) VALUES (?, ?, ?)", (st.session_state.user, nouveau_rappel.strip(), now_brute))
-                conn.commit()
-                st.rerun()
-
-    st.write("### 🕒 Vos mémos en cours")
-    cursor.execute("SELECT id, texte, date_creation_brute FROM rappels_personnels WHERE utilisateur = ? ORDER BY date_creation_brute DESC", (st.session_state.user,))
-    rappels = cursor.fetchall()
-
-    if rappels:
-        for r in rappels:
-            id_r, txt_r, date_b_r = r
-            try:
-                date_aff_r = datetime.strptime(date_b_r, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
-            except:
-                date_aff_r = date_b_r
-
-            with st.container(border=True):
-                col_txt, col_btn = st.columns([9, 1], vertical_alignment="center")
-                with col_txt:
-                    st.markdown(f"**🕒 {date_aff_r}**<br>{txt_r}", unsafe_allow_html=True)
-                with col_btn:
-                    if st.button("🗑️", key=f"del_rappel_{id_r}", use_container_width=True, help="Supprimer immédiatement"):
-                        cursor.execute("DELETE FROM rappels_personnels WHERE id = ?", (id_r,))
-                        conn.commit()
-                        st.rerun()
-    else:
-        st.info("Vous n'avez aucun rappel actif pour le moment.")
-
-
-# Page 5 Archives (Administrateur uniquement)
-elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administrateur":
-    st.title("🗄️ Archives Administrateur")
-    
-    if st.session_state.modal_mission:
-        date_m, qui_m, quoi_m = st.session_state.modal_mission
-        with st.container(border=True):
-            st.markdown(f"### 🔍 Détails de la Mission Archivée — Créée le {date_m}")
-            st.markdown(f"👤 **Assigné à :** {qui_m}")
-            st.info(quoi_m)
-            if st.button("Fermer la description ❌", use_container_width=True):
-                st.session_state.modal_mission = None
-                st.rerun()
-        st.write("---")
-
-    onglet_taches, = st.tabs(["📋 Archives Tâches"])
-    
-    with onglet_taches:
-        cursor.execute("""
-            SELECT 'historique' AS provenance, id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, date_archivage 
-            FROM planning_archive
-            UNION ALL
-            SELECT 'recents' AS provenance, id, date_creation_brute, assigne_a, intitule, temps_estime, date_realisation, priorite, 'En attente' AS date_archivage 
-            FROM planning 
-            WHERE date_realisation LIKE 'Fait le %'
-            ORDER BY date_archivage DESC
-        """)
-        taches_archived = cursor.fetchall()
-        
-        if taches_archived:
-            rep_arch = [1.0, 1.2, 3.2, 1.5, 0.8, 1.8, 1.4, 0.6]
-            cols_h = st.columns(rep_arch, vertical_alignment="center")
-            
-            with cols_h[0]: st.markdown("<p><span class='header-mark'></span>DATE</p>", unsafe_allow_html=True)
-            with cols_h[1]: st.markdown("<p>Assigné à</p>", unsafe_allow_html=True)
-            with cols_h[2]: st.markdown("<p>Mission</p>", unsafe_allow_html=True)
-            with cols_h[3]: st.markdown("<p>Urgence</p>", unsafe_allow_html=True)
-            with cols_h[4]: st.markdown("<p>Temps</p>", unsafe_allow_html=True)
-            with cols_h[5]: st.markdown("<p>Statut</p>", unsafe_allow_html=True)
-            with cols_h[6]: st.markdown("<p>Archivé le</p>", unsafe_allow_html=True)
-            with cols_h[7]: st.markdown("<p>Suppr.</p>", unsafe_allow_html=True)
-            
-            for ta in taches_archived:
-                provenance, id_arch, date_b, qui, quoi, temps, statut, priorite, date_arch = ta
-                
-                if date_b:
-                    try:
-                        date_aff = datetime.strptime(date_b, "%Y-%m-%d %H:%M:%S").strftime("%d/%m à %H:%M")
-                    except:
-                        date_aff = date_b
-                else:
-                    date_aff = "Inconnue"
-                
-                urg_class = "urg-1"
-                if priorite:
-                    if "2" in priorite or "Moyen" in priorite: urg_class = "urg-2"
-                    elif "3" in priorite or "Important" in priorite: urg_class = "urg-3"
-                    elif "4" in priorite or "Critique" in priorite or "Très urgent" in priorite: urg_class = "urg-4"
-                    elif "urgent" in priorite.lower(): urg_class = "urg-4"
-                
-                c = st.columns(rep_arch, vertical_alignment="center")
-                
-                with c[0]: st.markdown(f'<div class="row-marker {urg_class}"></div><div class="pc-only" style="text-align: center; font-weight: bold; color: #94a3b8; font-size:0.8rem;">{date_aff}</div><div class="mob-only mob-title">🗄️ Archive Date : {date_aff}</div>', unsafe_allow_html=True)
-                with c[1]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #e2e8f0;">{qui}</div><div class="mob-only mob-row"><span class="mob-lbl">👤 Assigné à</span><span class="mob-val">{qui}</span></div>', unsafe_allow_html=True)
-                
-                with c[2]:
-                    st.markdown('<div class="mob-only mob-spacer" style="margin-top: 4px; margin-bottom: -2px;"><span class="mob-lbl">📋 Mission (Détails)</span></div>', unsafe_allow_html=True)
-                    limite_caracteres = 30
-                    quoi_affiche_arch = quoi if len(quoi) <= limite_caracteres else quoi[:limite_caracteres] + "..."
-                    if st.button(quoi_affiche_arch, key=f"mission_btn_arch_{provenance}_{id_arch}", use_container_width=True):
-                        st.session_state.modal_mission = (date_aff, qui, quoi)
-                        st.rerun()
-
-                with c[3]:
-                    urgency_html = f'''
-                    <div class="urgency-container {urg_class}" title="{priorite}">
-                        <div class="urg-box b1"></div>
-                        <div class="urg-box b2"></div>
-                        <div class="urg-box b3"></div>
-                        <div class="urg-box b4"></div>
-                    </div>
-                    '''
-                    st.markdown(f'''
-                    <div class="pc-only">{urgency_html}</div>
-                    <div class="mob-only mob-row">
-                        <span class="mob-lbl">🚨 Urgence</span>
-                        <span class="mob-val" style="display:flex; justify-content:flex-end;">{urgency_html}</span>
-                    </div>
-                    ''', unsafe_allow_html=True)
-                
-                with c[4]: st.markdown(f'<div class="pc-only" style="text-align: center; color: #cbd5e1;">{temps}</div><div class="mob-only mob-row"><span class="mob-lbl">⏱️ Temps</span><span class="mob-val">{temps}</span></div>', unsafe_allow_html=True)
-                
-                with c[5]: 
-                    st.markdown(f'<div class="pc-only" style="text-align: center;"><span class="status-badge status-done">Archivé</span></div><div class="mob-only mob-row"><span class="mob-lbl">⚡ Statut</span><span class="status-badge status-done">Archivé</span></div>', unsafe_allow_html=True)
-                
-                with c[6]: st.markdown(f'<div class="pc-only" style="text-align: center; font-style: italic; color: #64748b; font-size: 0.82rem;">{date_arch}</div><div class="mob-only mob-row"><span class="mob-lbl">📅 Archivage</span><span class="mob-val">{date_arch}</span></div>', unsafe_allow_html=True)
-                
-                with c[7]:
-                    if st.button("🗑️", key=f"btn_del_arch_{provenance}_{id_arch}", use_container_width=True):
-                        if provenance == 'historique': cursor.execute("DELETE FROM planning_archive WHERE id = ?", (id_arch,))
-                        else: cursor.execute("DELETE FROM planning WHERE id = ?", (id_arch,))
-                        conn.commit()
-                        st.rerun()
-        else:
-            st.info("Les archives de tâches sont vides.")
-            
-    # Page 6 - Demandes Fournisseurs
-elif page == "📦 Demande Fournisseur":
-    st.title("📦 Création de Demande Fournisseur")
-    st.caption("Générez un PDF officiel de demande d'échange ou d'avoir à partir d'un dossier SAV existant.")
-    
-    # 1. Récupération des dossiers SAV existants
-    cursor.execute("SELECT id, date_reception, nom_client, designation_outil, motif_defaut, nom_fournisseur, photo_1, photo_2, photo_3, photo_facture FROM sav ORDER BY date_creation_brute DESC")
-    dossiers = cursor.fetchall()
-    
-    if not dossiers:
-        st.info("Aucun dossier SAV n'est actuellement enregistré dans la base.")
-    else:
-        # Création d'un dictionnaire pour le menu déroulant
-        options_sav = {f"Dossier #{d[0]} - {d[3]} (Client: {d[2]} - {d[1]})": d for d in dossiers}
-        choix = st.selectbox("1. Sélectionnez le dossier SAV défectueux :", list(options_sav.keys()))
-        
-        dossier_selectionne = options_sav[choix]
-        d_id, d_date, d_client, d_outil, d_motif, d_fournisseur_nom, d_p1, d_p2, d_p3, d_pfac = dossier_selectionne
-        
-        st.write("---")
-        
-  # 2. Affichage en colonnes
-        col_gauche, col_droite = st.columns(2)
-        
-        with col_gauche:
-            st.subheader("🏢 Expéditeur")
-            # Attention : il y a deux espaces à la fin de chaque ligne ci-dessous !
-            st.markdown("""
-            **Quincaillerie MAUPU** 3 rue du Mail Est  
-            45170 Neuville-Aux-Bois  
-            02 38 91 00 15  
-            quincaillerie.maupu@cegetel.net
-            """)
-            
-            st.write("---")
-            st.subheader("🔧 Matériel concerné (Issu du SAV)")
-            st.info(f"**Outil :** {d_outil}\n\n**Défaut :** {d_motif}")
-            
-            # --- NOUVEAUTÉ : Champ facultatif pour la référence ---
-            ref_produit = st.text_input("🏷️ Référence du produit (Facultatif)", placeholder="Ex : REF-45892A")
-            
-        with col_droite:
-            st.subheader("🏭 Destinataire (Fournisseur)")
-            f_nom = st.text_input("Nom du fournisseur", value=d_fournisseur_nom if d_fournisseur_nom else "")
-            f_adresse = st.text_area("Adresse complète")
-            col_t, col_m = st.columns(2)
-            f_tel = col_t.text_input("Téléphone fournisseur")
-            f_mail = col_m.text_input("Email fournisseur")
-            
-            st.write("---")
-            st.subheader("📋 Nature de la demande")
-            type_demande = st.radio("Sélectionnez l'action souhaitée :", ["Demande d'échange", "Demande d'avoir"])
-            
-        st.write("---")
-        
-        # 3. Bouton pour générer le document
-        st.subheader("📄 Génération du document")
-        st.write("Une fois les informations vérifiées, cliquez ci-dessous pour créer le PDF.")
-        
-        if st.button("⚙️ Préparer le document PDF", use_container_width=True):
-            with st.spinner("Génération du PDF en cours, traitement des images..."):
-                # On ajoute ref_produit en 2e position des paramètres !
-                pdf_bytes = generer_pdf_fournisseur(
-                    d_outil, ref_produit, d_motif, f_nom, f_adresse, f_tel, f_mail, 
-                    type_demande, d_p1, d_p2, d_p3, d_pfac
-                )
-                
-            st.success("✅ Le document est prêt !")
-            
-            st.download_button(
-                label="⬇️ Télécharger la Demande Fournisseur (PDF)",
-                data=pdf_bytes,
-                file_name=f"Demande_{type_demande.replace(' ', '_')}_{d_outil.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-            
