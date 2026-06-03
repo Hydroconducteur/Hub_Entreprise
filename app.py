@@ -488,6 +488,84 @@ def nettoyer_et_archiver_data():
 
 nettoyer_et_archiver_data()
 
+from fpdf import FPDF
+import tempfile
+import os
+
+def generer_pdf_fournisseur(outil, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac):
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # --- EN-TÊTE : Quincaillerie MAUPU (Gauche) et Fournisseur (Droite) ---
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(100, 6, "Quincaillerie MAUPU", ln=0)
+    pdf.cell(90, 6, f"Fournisseur : {f_nom}", ln=1)
+    
+    pdf.set_font("helvetica", "", 11)
+    pdf.cell(100, 6, "3 rue du Mail Est", ln=0)
+    
+    # Gestion de l'adresse fournisseur sur plusieurs lignes
+    y_courant = pdf.get_y()
+    pdf.set_xy(110, y_courant)
+    pdf.multi_cell(90, 6, f_adresse if f_adresse else "Adresse non renseignée")
+    
+    pdf.set_xy(10, y_courant + 6)
+    pdf.cell(100, 6, "02 38 91 00 15", ln=0)
+    pdf.set_xy(110, y_courant + 18) # On descend un peu pour le tel
+    pdf.cell(90, 6, f"Tel : {f_tel}", ln=1)
+    
+    pdf.cell(100, 6, "quincaillerie.maupu@cegetel.net", ln=0)
+    pdf.cell(90, 6, f"Email : {f_mail}", ln=1)
+    
+    pdf.ln(15)
+    
+    # --- TITRE DE LA DEMANDE ---
+    pdf.set_font("helvetica", "B", 16)
+    # Fond gris clair pour faire propre
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(0, 12, f"OBJET : {type_demande.upper()}", border=1, ln=1, align="C", fill=True)
+    pdf.ln(10)
+    
+    # --- INFORMATIONS MATÉRIEL ---
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 8, "Details du materiel defectueux :", ln=1)
+    
+    pdf.set_font("helvetica", "", 11)
+    pdf.cell(0, 6, f"- Designation de l'outil : {outil}", ln=1)
+    pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
+    pdf.ln(10)
+    
+    # --- INTÉGRATION DES PHOTOS ---
+    def ajouter_photo_pdf(b64_string, titre):
+        if b64_string:
+            try:
+                # On décode la base64 et on la sauvegarde dans un fichier temporaire pour le PDF
+                img_data = base64.b64decode(b64_string)
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                    tmp.write(img_data)
+                    tmp_path = tmp.name
+                
+                # Vérification de l'espace restant sur la page pour ne pas couper la photo
+                if pdf.get_y() > 200:
+                    pdf.add_page()
+                    
+                pdf.set_font("helvetica", "B", 10)
+                pdf.cell(0, 8, titre, ln=1)
+                pdf.image(tmp_path, w=80) # Largeur de 80mm
+                pdf.ln(5)
+                
+                os.unlink(tmp_path) # Nettoyage du fichier temporaire
+            except Exception:
+                pass # Si l'image est corrompue, on passe
+
+    ajouter_photo_pdf(p_fac, "1. Preuve d'achat (Facture) :")
+    ajouter_photo_pdf(p1, "2. Photo du defaut 1 :")
+    ajouter_photo_pdf(p2, "3. Photo du defaut 2 :")
+    ajouter_photo_pdf(p3, "4. Photo du defaut 3 :")
+    
+    # fpdf2 renvoie directement un bytearray prêt à être téléchargé
+    return pdf.output()
+
 # Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
@@ -549,7 +627,7 @@ with st.sidebar:
     st.write("---")
     st.title("🗺️ Menu Principal")
     # AJOUT DE L'ONGLET SAV ICI
-    liste_pages = ["📋 Planning de l'équipe", "🛠️ SAV & Réparations", "💬 Zone Tchat", "📌 Mes Rappels"]
+    liste_pages = ["📋 Planning de l'équipe", "🛠️ SAV & Réparations", "💬 Zone Tchat", "📌 Mes Rappels", "📦 Demande Fournisseur"]
     if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
@@ -1110,3 +1188,76 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                         st.rerun()
         else:
             st.info("Les archives de tâches sont vides.")
+            
+    # Page 6 - Demandes Fournisseurs
+elif page == "📦 Demande Fournisseur":
+    st.title("📦 Création de Demande Fournisseur")
+    st.caption("Générez un PDF officiel de demande d'échange ou d'avoir à partir d'un dossier SAV existant.")
+    
+    # 1. Récupération des dossiers SAV existants
+    cursor.execute("SELECT id, date_reception, nom_client, designation_outil, motif_defaut, nom_fournisseur, photo_1, photo_2, photo_3, photo_facture FROM sav ORDER BY date_creation_brute DESC")
+    dossiers = cursor.fetchall()
+    
+    if not dossiers:
+        st.info("Aucun dossier SAV n'est actuellement enregistré dans la base.")
+    else:
+        # Création d'un dictionnaire pour le menu déroulant
+        options_sav = {f"Dossier #{d[0]} - {d[3]} (Client: {d[2]} - {d[1]})": d for d in dossiers}
+        choix = st.selectbox("1. Sélectionnez le dossier SAV défectueux :", list(options_sav.keys()))
+        
+        dossier_selectionne = options_sav[choix]
+        d_id, d_date, d_client, d_outil, d_motif, d_fournisseur_nom, d_p1, d_p2, d_p3, d_pfac = dossier_selectionne
+        
+        st.write("---")
+        
+        # 2. Affichage en colonnes comme demandé
+        col_gauche, col_droite = st.columns(2)
+        
+        with col_gauche:
+            st.subheader("🏢 Expéditeur")
+            st.markdown("""
+            **Quincaillerie MAUPU** 3 rue du Mail Est  
+            02 38 91 00 15  
+            quincaillerie.maupu@cegetel.net
+            """)
+            
+            st.write("---")
+            st.subheader("🔧 Matériel concerné (Issu du SAV)")
+            st.info(f"**Outil :** {d_outil}\n\n**Défaut :** {d_motif}")
+            
+        with col_droite:
+            st.subheader("🏭 Destinataire (Fournisseur)")
+            f_nom = st.text_input("Nom du fournisseur", value=d_fournisseur_nom if d_fournisseur_nom else "")
+            f_adresse = st.text_area("Adresse complète")
+            col_t, col_m = st.columns(2)
+            f_tel = col_t.text_input("Téléphone fournisseur")
+            f_mail = col_m.text_input("Email fournisseur")
+            
+            st.write("---")
+            st.subheader("📋 Nature de la demande")
+            # J'utilise des "radio" plutôt que des cases à cocher pour forcer un seul choix possible
+            type_demande = st.radio("Sélectionnez l'action souhaitée :", ["Demande d'échange", "Demande d'avoir"])
+            
+        st.write("---")
+        
+        # 3. Bouton pour générer le document
+        st.subheader("📄 Génération du document")
+        st.write("Une fois les informations vérifiées, cliquez ci-dessous pour créer le PDF.")
+        
+        if st.button("⚙️ Préparer le document PDF", use_container_width=True):
+            with st.spinner("Génération du PDF en cours, traitement des images..."):
+                pdf_bytes = generer_pdf_fournisseur(
+                    d_outil, d_motif, f_nom, f_adresse, f_tel, f_mail, 
+                    type_demande, d_p1, d_p2, d_p3, d_pfac
+                )
+                
+            st.success("✅ Le document est prêt !")
+            
+            # Le bouton natif Streamlit pour télécharger des fichiers
+            st.download_button(
+                label="⬇️ Télécharger la Demande Fournisseur (PDF)",
+                data=pdf_bytes,
+                file_name=f"Demande_{type_demande.replace(' ', '_')}_{d_outil.replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
