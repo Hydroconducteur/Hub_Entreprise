@@ -912,7 +912,6 @@ if page == "📋 Planning de l'équipe":
             st.info("Aucune tâche ne correspond à ce filtre.")
 
     afficher_tableau_taches(filtre_statut)
-
 # -------------------------------------------------------------
 # PAGE NOUVELLE : SAV ET REPARATIONS
 # -------------------------------------------------------------
@@ -926,20 +925,20 @@ elif page == "🛠️ SAV & Réparations":
         st.markdown("Veuillez remplir les informations du client. **(Sur mobile, les boutons 'Parcourir' ouvriront l'appareil photo)**.")
         
         with st.form("form_nouveau_sav", clear_on_submit=True):
-            # Ligne 1 : Info Client
+            # 1. INFO CLIENT
             st.subheader("👤 Informations Client")
 
-            # Ligne 1 : Date de réception
+            # Date de réception
             date_reception = st.date_input("📅 Date de réception", datetime.now(ZoneInfo("Europe/Paris")))
 
-            # Ligne 2 : Nom et Prénom sur la même ligne
+            # Nom et Prénom
             col_nom, col_prenom = st.columns(2)
             with col_nom:
                 client_nom = st.text_input("👤 Nom")
             with col_prenom:
                 client_prenom = st.text_input("👤 Prénom")
             
-            # Ligne 3 : Adresse, Code Postal et Ville sur la même ligne
+            # Adresse, Code Postal et Ville
             col_adr, col_cp, col_ville = st.columns([3, 1, 2])
             with col_adr:
                 client_adresse = st.text_input("🏠 Adresse")
@@ -948,55 +947,64 @@ elif page == "🛠️ SAV & Réparations":
             with col_ville:
                 client_ville = st.text_input("🏙️ Ville")
             
-            # Ligne 4 : Téléphone
-            client_tel = st.text_input("📞 Téléphone")
-            
-            # Ligne 5 : Email
-            client_email = st.text_input("📧 Email")
+            # Téléphone et Email
+            col_tel, col_email = st.columns(2)
+            with col_tel:
+                client_tel = st.text_input("📞 Téléphone")
+            with col_email:
+                client_email = st.text_input("📧 Email")
 
             st.write("---")
-            # Ligne 2 : Info Matériel
+            
+            # 2. INFO MATÉRIEL & DÉFAUTS
             st.subheader("🔧 Informations Matériel et Défauts")
 
-            # On sépare en deux grandes colonnes (Gauche et Droite)
             col_mat_gauche, col_mat_droite = st.columns(2)
 
             with col_mat_gauche:
-                # Ligne 1 : Désignation
+                # Désignation
                 materiel_designation = st.text_input("📦 Désignation")
                 
-                # Ligne 2 : Référence ITEK et Quantité sur la même ligne
+                # Référence ITEK et Quantité
                 col_itek, col_qte = st.columns([3, 1])
                 with col_itek:
                     ref_itek = st.text_input("🏷️ Référence ITEK")
                 with col_qte:
                     quantite = st.number_input("🔢 Quantité", min_value=1, value=1, step=1)
                     
-                # Ligne 3 : Référence Fournisseur et Nom Fournisseur sur la même ligne
+                # Référence Fournisseur et Nom Fournisseur
                 col_ref_fourn, col_nom_fourn = st.columns(2)
                 with col_ref_fourn:
                     ref_fournisseur = st.text_input("🏷️ Référence Fournisseur")
                 with col_nom_fourn:
                     nom_fournisseur = st.text_input("🏭 Nom Fournisseur")
                     
-                # Ligne 4 : N° de série
+                # N° de série
                 num_serie = st.text_input("🔢 N° de série")
 
             with col_mat_droite:
-                # À DROITE - Ligne 1 : Motif
+                # Motif / Description
                 motif_defaut = st.text_area("📋 Motif (Description et défaut)", height=115) 
                 
-                # À DROITE - Ligne 2 : Accessoires fournis
+                # Accessoires fournis
                 accessoires_fournis = st.text_input("🎒 Accessoires fournis")
-                
-                # Ligne 3 : Facture
-                st.subheader("🧾 Facturation")
-                col5, col6 = st.columns(2)
-                sav_num_facture = col5.text_input("Numéro Facture client")
-                sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
 
             st.write("---")
-            # Ligne 4 : Photos de l'outil
+            
+            # 3. FACTURATION & GARANTIE (Séparé du matériel)
+            st.subheader("🧾 Facturation & Garantie")
+            
+            col_fac1, col_fac2 = st.columns(2)
+            with col_fac1:
+                sav_num_facture = st.text_input("Numéro Facture client")
+                date_achat = st.date_input("📅 Date d'achat", datetime.now(ZoneInfo("Europe/Paris")))
+            with col_fac2:
+                sous_garantie = st.radio("🛡️ L'objet est-il sous garantie ?", ["Oui", "Non"], horizontal=True)
+                sav_photo_facture = st.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
+
+            st.write("---")
+            
+            # 4. PHOTOS DE L'OUTIL
             st.subheader("📷 Photos de l'outil (Max 3)")
             col7, col8, col9 = st.columns(3)
             sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
@@ -1006,34 +1014,37 @@ elif page == "🛠️ SAV & Réparations":
             submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
 
             if submit_sav:
-                if sav_nom and sav_tel and sav_outil and sav_motif:
+                # Modifie la condition si tu veux aussi rendre obligatoires les nouveaux champs
+                if client_nom and client_tel and materiel_designation and motif_defaut:
                     now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                                         
-                    # Transformation des images en Base64 pour la base de données
+                    # Transformation des images en Base64
                     b64_p1 = encoder_image(sav_p1)
                     b64_p2 = encoder_image(sav_p2)
                     b64_p3 = encoder_image(sav_p3)
                     b64_facture = encoder_image(sav_photo_facture)
 
-                    date_str = sav_date.strftime("%d/%m/%Y")
+                    date_reception_str = date_reception.strftime("%d/%m/%Y")
+                    date_achat_str = date_achat.strftime("%d/%m/%Y")
 
+                    # Ajout des champs date_achat et sous_garantie dans la requête SQL
                     cursor.execute("""
                         INSERT INTO sav (
                             date_reception, nom_client, prenom_client, adresse, tel, mail, 
                             designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
-                            motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
+                            motif_defaut, num_facture, date_achat, sous_garantie, photo_1, photo_2, photo_3, photo_facture, 
                             cree_par, date_creation_brute
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
-                            sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
-                            sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (date_reception_str, client_nom, client_prenom, client_adresse, client_tel, client_email, 
+                            materiel_designation, ref_fournisseur, ref_itek, nom_fournisseur, 
+                            motif_defaut, sav_num_facture, date_achat_str, sous_garantie, b64_p1, b64_p2, b64_p3, b64_facture, 
                             st.session_state.user, now_brute))
                         
                     conn.commit()
                     st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
                     st.rerun()
                 else:
-                    st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
+                    st.error("❌ Merci de remplir au minimum les champs obligatoires : Nom, Tel, Désignation et Motif.")
 
     # SOUS-ONGLET 2 : LE SUIVI
     with onglet_suivi:
@@ -1043,8 +1054,9 @@ elif page == "🛠️ SAV & Réparations":
 
         if dossiers_sav:
             for d in dossiers_sav:
-                # Récupération des infos depuis la BDD (attention à l'ordre des colonnes)
-                d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
+                # /!\ ATTENTION : Ajuste le déballage des variables selon l'ordre exact de tes colonnes en BDD
+                # Ici j'ai intercalé d_date_achat et d_garantie après d_num_fac à titre d'exemple
+                d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_date_achat, d_garantie, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
                 
                 with st.expander(f"🛠️ Dossier #{d_id} - {d_outil} | Client : {d_nom} {d_prenom} | Statut : {d_statut}"):
                     c1, c2 = st.columns(2)
@@ -1055,6 +1067,7 @@ elif page == "🛠️ SAV & Réparations":
                     c2.markdown(f"**Fournisseur :** {d_nom_f} (Réf: {d_ref_f})")
                     c2.markdown(f"**Réf ITEK :** {d_ref_i}")
                     c2.markdown(f"**Numéro Facture :** {d_num_fac}")
+                    c2.markdown(f"**Date d'achat :** {d_date_achat} | **Garantie :** {d_garantie}")
                     
                     st.info(f"**Motif du retour :**\n{d_motif}")
 
