@@ -1046,16 +1046,25 @@ elif page == "🛠️ SAV & Réparations":
                 else:
                     st.error("❌ Merci de remplir au minimum les champs obligatoires : Nom, Tel, Désignation et Motif.")
 
-    # SOUS-ONGLET 2 : LE SUIVI
+   # SOUS-ONGLET 2 : LE SUIVI
     with onglet_suivi:
         st.subheader("Dossiers clients enregistrés")
-        cursor.execute("SELECT * FROM sav ORDER BY date_creation_brute DESC")
+        
+        # On liste explicitement les colonnes pour garantir l'ordre au déballage
+        cursor.execute("""
+            SELECT 
+                id, date_reception, nom_client, prenom_client, adresse, tel, mail, 
+                designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
+                motif_defaut, num_facture, date_achat, sous_garantie, 
+                photo_1, photo_2, photo_3, photo_facture, statut, cree_par, date_creation_brute 
+            FROM sav 
+            ORDER BY date_creation_brute DESC
+        """)
         dossiers_sav = cursor.fetchall()
 
         if dossiers_sav:
             for d in dossiers_sav:
-                # /!\ ATTENTION : Ajuste le déballage des variables selon l'ordre exact de tes colonnes en BDD
-                # Ici j'ai intercalé d_date_achat et d_garantie après d_num_fac à titre d'exemple
+                # Le déballage correspond maintenant à 100% à la requête ci-dessus
                 d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_date_achat, d_garantie, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
                 
                 with st.expander(f"🛠️ Dossier #{d_id} - {d_outil} | Client : {d_nom} {d_prenom} | Statut : {d_statut}"):
