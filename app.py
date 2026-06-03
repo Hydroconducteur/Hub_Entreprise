@@ -579,7 +579,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
 
     if valid_defauts:
         pdf.set_font("helvetica", "B", 10)
-        pdf.cell(0, 6, "2. Photos Plaques Signalitique constates :", ln=1)
+        pdf.cell(0, 6, "2. Photos default constates :", ln=1)
         
         num_imgs = len(valid_defauts)
         gap = 4 # Espace en mm entre les photos
@@ -1007,9 +1007,9 @@ elif page == "🛠️ SAV & Réparations":
             # 4. PHOTOS DE L'OUTIL
             st.subheader("📷 Photos de l'outil (Max 3)")
             col7, col8, col9 = st.columns(3)
-            sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
-            sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
-            sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
+            sav_p1 = col7.file_uploader("Photo Plaque Signalitique", type=["jpg", "jpeg", "png"])
+            sav_p2 = col8.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
+            sav_p3 = col9.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
 
             submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
 
