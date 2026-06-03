@@ -1289,11 +1289,3 @@ elif page == "📦 Demande Fournisseur":
                 use_container_width=True
             )
             
-            # Le bouton natif Streamlit pour télécharger des fichiers
-            st.download_button(
-                label="⬇️ Télécharger la Demande Fournisseur (PDF)",
-                data=pdf_bytes,
-                file_name=f"Demande_{type_demande.replace(' ', '_')}_{d_outil.replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
