@@ -372,31 +372,33 @@ def initialiser_structure_base():
     cursor.execute("CREATE TABLE IF NOT EXISTS tchat_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, expediteur TEXT, destinataire TEXT, texte TEXT, date_envoi TEXT, date_creation_brute TEXT, date_archivage TEXT, garder_permanent INTEGER DEFAULT 0)")
     cursor.execute("CREATE TABLE IF NOT EXISTS rappels_personnels (id INTEGER PRIMARY KEY AUTOINCREMENT, utilisateur TEXT, texte TEXT, date_creation_brute TEXT)")
     
-    # NOUVELLE TABLE SAV
+# Nouvelles tables pour le SAV
+    cursor.execute("CREATE TABLE IF NOT EXISTS fournisseurs (id INTEGER PRIMARY KEY AUTOINCREMENT, nom TEXT UNIQUE, adresse TEXT, tel TEXT, mail TEXT)")
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS sav (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date_reception TEXT,
-            nom_client TEXT,
-            prenom_client TEXT,
-            adresse TEXT,
-            tel TEXT,
-            mail TEXT,
-            designation_outil TEXT,
-            ref_fournisseur TEXT,
-            ref_itek TEXT,
-            nom_fournisseur TEXT,
-            motif_defaut TEXT,
-            num_facture TEXT,
-            photo_1 TEXT,
-            photo_2 TEXT,
-            photo_3 TEXT,
-            photo_facture TEXT,
-            statut TEXT DEFAULT 'En cours',
-            cree_par TEXT,
-            date_creation_brute TEXT
+        CREATE TABLE IF NOT EXISTS sav_demandes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            date_creation TEXT, 
+            nom_fournisseur TEXT, 
+            adresse TEXT, 
+            tel TEXT, 
+            mail TEXT, 
+            materiel_defaut TEXT, 
+            type_demande TEXT, 
+            statut TEXT, 
+            facture_b64 TEXT, 
+            photo1_b64 TEXT, 
+            photo2_b64 TEXT, 
+            photo3_b64 TEXT
         )
     """)
+    
+    # Insertion du fournisseur par défaut s'il n'existe pas déjà
+    cursor.execute("SELECT COUNT(*) FROM fournisseurs WHERE nom = 'Quincaillerie MAUPU'")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO fournisseurs (nom, adresse, tel, mail) 
+            VALUES ('Quincaillerie MAUPU', '3 rue du Mail Est\n45170 Neuville-Aux-Bois', '02 38 91 00 15', 'quincaillerie.maupu@cegetel.net')
+        """)
 
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
@@ -549,11 +551,10 @@ with st.sidebar:
         
     st.write("---")
     st.title("🗺️ Menu Principal")
-    # AJOUT DE L'ONGLET SAV ICI
-    liste_pages = ["📋 Planning de l'équipe", "🛠️ SAV & Réparations", "💬 Zone Tchat", "📌 Mes Rappels"]
+    # Ajout de l'onglet SAV ici :
+    liste_pages = ["📋 Planning de l'équipe", "💬 Zone Tchat", "🛠️ Demandes SAV"]
     if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
-
     if st.session_state.role == "Administrateur":
         st.write("---")
         st.title("🛡️ Gestion Sécurité")
@@ -783,129 +784,214 @@ if page == "📋 Planning de l'équipe":
 
     afficher_tableau_taches(filtre_statut)
 
-# -------------------------------------------------------------
-# PAGE NOUVELLE : SAV ET REPARATIONS
-# -------------------------------------------------------------
-elif page == "🛠️ SAV & Réparations":
-    st.title("🛠️ Espace SAV & Réparations")
+# ==============================================================================
+# Page 4 : Demandes SAV & Gestion Fournisseurs
+# ==============================================================================
+elif page == "🛠️ Demandes SAV":
+    import base64
+    import io
+    from fpdf import FPDF
+
+    st.title("🛠️ Gestion du SAV Fournisseurs")
     
-    onglet_nouveau, onglet_suivi = st.tabs(["📝 Créer un dossier SAV", "📂 Suivi des dossiers existants"])
+    # Fonctions d'aide pour convertir les images chargées en Base64 (pour stockage BDD)
+    def fichier_vers_b64(fichier_uploade):
+        if fichier_uploade is not None:
+            return base64.b64encode(fichier_uploade.getvalue()).decode("utf-8")
+        return ""
 
-    # SOUS-ONGLET 1 : LE GRAND FORMULAIRE
-    with onglet_nouveau:
-        st.markdown("Veuillez remplir les informations du client. **(Sur mobile, les boutons 'Parcourir' ouvriront l'appareil photo)**.")
+    # Fonction de génération du PDF
+    def generer_pdf(sav_data):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, "Fiche de Demande SAV Fournisseur", ln=True, align="C")
+        pdf.ln(10)
         
-        with st.form("form_nouveau_sav", clear_on_submit=True):
-            # Ligne 1 : Info Client
-            st.subheader("👤 Informations Client")
-            col1, col2 = st.columns(2)
-            sav_date = col1.date_input("Date de réception")
-            sav_nom = col2.text_input("Nom du client *")
-            sav_prenom = col1.text_input("Prénom")
-            sav_tel = col2.text_input("Téléphone *")
-            sav_mail = col1.text_input("Email")
-            sav_adresse = col2.text_area("Adresse")
+        pdf.set_font("Helvetica", "", 11)
+        # Bloc Fournisseur (Haut à gauche)
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 6, f"Fournisseur : {sav_data['nom']}", ln=True)
+        pdf.set_font("Helvetica", "", 11)
+        pdf.multi_cell(0, 6, f"Adresse : {sav_data['adresse']}")
+        pdf.cell(0, 6, f"Tél : {sav_data['tel']}", ln=True)
+        pdf.cell(0, 6, f"Mail : {sav_data['mail']}", ln=True)
+        pdf.ln(10)
+        
+        # Type de demande
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 6, f"Type de demande : {sav_data['type_demande']}", ln=True)
+        pdf.ln(5)
+        
+        # Détails matériel
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 6, "Informations Matériel & Défaut :", ln=True)
+        pdf.set_font("Helvetica", "", 11)
+        pdf.multi_cell(0, 6, sav_data['details'])
+        
+        # Retourne les bytes du PDF
+        return pdf.output()
 
-            st.write("---")
-            # Ligne 2 : Info Matériel
-            st.subheader("🔧 Informations Matériel & Défaut")
-            col3, col4 = st.columns(2)
-            sav_outil = col3.text_input("Désignation outil *")
-            sav_motif = col4.text_area("Motif / Description défaut *")
+    # Séparateur en deux onglets internes : Formulaire et Historique/Dossiers
+    sub_tab1, sub_tab2 = st.tabs(["📄 Nouvelle Demande SAV", "📂 Suivi des Dossiers"])
+
+    with sub_tab1:
+        st.subheader("Créer une nouvelle fiche SAV")
+        
+        # 1. Gestion et Récupération des fournisseurs enregistrés
+        cursor.execute("SELECT nom, adresse, tel, mail FROM fournisseurs ORDER BY nom ASC")
+        rows_f = cursor.fetchall()
+        dict_fournisseurs = {r[0]: {"adresse": r[1], "tel": r[2], "mail": r[3]} for r in rows_f}
+        
+        options_f = ["-- Choisir un fournisseur existant --", "+ Ajouter un nouveau fournisseur"] + list(dict_fournisseurs.keys())
+        choix_f = st.selectbox("Sélectionner le Fournisseur :", options_f)
+        
+        # Variables de pré-remplissage
+        f_nom, f_adresse, f_tel, f_mail = "", "", "", ""
+        
+        if choix_f == "+ Ajouter un nouveau fournisseur":
+            with st.container(border=True):
+                st.caption("Ajouter un profil fournisseur en mémoire :")
+                f_nom = st.text_input("Nom du Nouveau Fournisseur")
+                f_adresse = st.text_area("Adresse complète")
+                f_tel = st.text_input("Téléphone")
+                f_mail = st.text_input("Adresse Email")
+                if st.button("💾 Enregistrer le fournisseur"):
+                    if f_nom:
+                        cursor.execute("INSERT OR REPLACE INTO fournisseurs (nom, adresse, tel, mail) VALUES (?, ?, ?, ?)", (f_nom, f_adresse, f_tel, f_mail))
+                        conn.commit()
+                        st.success(f"Fournisseur '{f_nom}' enregistré avec succès !")
+                        st.rerun()
+        elif choix_f != "-- Choisir un fournisseur existant --":
+            f_nom = choix_f
+            f_adresse = dict_fournisseurs[choix_f]["adresse"]
+            f_tel = dict_fournisseurs[choix_f]["tel"]
+            f_mail = dict_fournisseurs[choix_f]["mail"]
             
-            sav_nom_fournisseur = col3.text_input("Nom fournisseur")
-            sav_ref_fournisseur = col4.text_input("Référence fournisseur")
-            sav_ref_itek = col3.text_input("Référence ITEK")
+            # Possibilité de supprimer le fournisseur sélectionné s'il y a un problème
+            if st.button("🗑️ Supprimer ce fournisseur de la mémoire", key="del_f_btn"):
+                cursor.execute("DELETE FROM fournisseurs WHERE nom = ?", (f_nom,))
+                conn.commit()
+                st.warning(f"Fournisseur '{f_nom}' supprimé.")
+                st.rerun()
 
-            st.write("---")
-            # Ligne 3 : Facture
-            st.subheader("🧾 Facturation")
-            col5, col6 = st.columns(2)
-            sav_num_facture = col5.text_input("Numéro Facture client")
-            sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
-
-            st.write("---")
-            # Ligne 4 : Photos de l'outil
-            st.subheader("📷 Photos de l'outil (Max 3)")
-            col7, col8, col9 = st.columns(3)
-            sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
-            sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
-            sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
-
-            submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
-
-            if submit_sav:
-                if sav_nom and sav_tel and sav_outil and sav_motif:
-                    now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
-                    
-                    # Transformation des images en Base64 pour la base de données
-                    b64_p1 = encoder_image(sav_p1)
-                    b64_p2 = encoder_image(sav_p2)
-                    b64_p3 = encoder_image(sav_p3)
-                    b64_facture = encoder_image(sav_photo_facture)
-
-                    date_str = sav_date.strftime("%d/%m/%Y")
-
-                    cursor.execute("""
-                        INSERT INTO sav (
-                            date_reception, nom_client, prenom_client, adresse, tel, mail, 
-                            designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
-                            motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
-                            cree_par, date_creation_brute
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
-                          sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
-                          sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
-                          st.session_state.user, now_brute))
-                    
-                    conn.commit()
-                    st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
-                    st.rerun()
-                else:
-                    st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
-
-    # SOUS-ONGLET 2 : LE SUIVI
-    with onglet_suivi:
-        st.subheader("Dossiers clients enregistrés")
-        cursor.execute("SELECT * FROM sav ORDER BY date_creation_brute DESC")
-        dossiers_sav = cursor.fetchall()
-
-        if dossiers_sav:
-            for d in dossiers_sav:
-                # Récupération des infos depuis la BDD (attention à l'ordre des colonnes)
-                d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
+        # 2. Formulaire principal de la Demande SAV
+        with st.form("form_demande_sav", clear_on_submit=False):
+            col_gauche, col_droite = st.columns(2)
+            
+            with col_gauche:
+                st.markdown("### 🏢 Coordonnées")
+                out_nom = st.text_input("Nom Fournisseur", value=f_nom)
+                out_adr = st.text_area("Adresse", value=f_adresse)
+                out_tel = st.text_input("Tel", value=f_tel)
+                out_mail = st.text_input("Mail", value=f_mail)
                 
-                with st.expander(f"🛠️ Dossier #{d_id} - {d_outil} | Client : {d_nom} {d_prenom} | Statut : {d_statut}"):
-                    c1, c2 = st.columns(2)
-                    c1.markdown(f"**Reçu le :** {d_date} par {d_cree_par}")
-                    c1.markdown(f"**Contact :** {d_tel} / {d_mail}")
-                    c1.markdown(f"**Adresse :** {d_adresse}")
-                    
-                    c2.markdown(f"**Fournisseur :** {d_nom_f} (Réf: {d_ref_f})")
-                    c2.markdown(f"**Réf ITEK :** {d_ref_i}")
-                    c2.markdown(f"**Numéro Facture :** {d_num_fac}")
-                    
-                    st.info(f"**Motif du retour :**\n{d_motif}")
+            with col_droite:
+                st.markdown("### 🛠️ Nature de la demande")
+                # Boutons cochables exclusifs (Type Radio pour éviter d'avoir à gérer deux cases cochées en même temps)
+                type_demande = st.radio("Sélectionnez l'option requise :", ["Demande d'échange 🔄", "Demande d'avoir 💰"])
+                
+                st.markdown("### 📦 Détails")
+                out_details = st.text_area("Information matériel et défaut constaté", height=140)
 
-                    # Affichage des photos si elles existent
-                    st.write("**Photos rattachées au dossier :**")
-                    col_p1, col_p2, col_p3, col_pfac = st.columns(4)
-                    
-                    if d_p1: col_p1.image(base64.b64decode(d_p1), caption="Défaut 1", use_container_width=True)
-                    if d_p2: col_p2.image(base64.b64decode(d_p2), caption="Défaut 2", use_container_width=True)
-                    if d_p3: col_p3.image(base64.b64decode(d_p3), caption="Défaut 3", use_container_width=True)
-                    if d_pfac: col_pfac.image(base64.b64decode(d_pfac), caption="Facture", use_container_width=True)
+            st.markdown("---")
+            st.markdown("### 📸 Pièces jointes (Photos)")
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                facture_file = st.file_uploader("Photo facture client", type=["png", "jpg", "jpeg"])
+                photo1_file = st.file_uploader("Photo produit 1", type=["png", "jpg", "jpeg"])
+            with col_p2:
+                photo2_file = st.file_uploader("Photo produit 2", type=["png", "jpg", "jpeg"])
+                photo3_file = st.file_uploader("Photo produit 3", type=["png", "jpg", "jpeg"])
 
-                    if st.session_state.role == "Administrateur":
-                        st.write("---")
-                        if st.button("🗑️ Supprimer définitivement ce dossier", key=f"del_sav_{d_id}"):
-                            cursor.execute("DELETE FROM sav WHERE id = ?", (d_id,))
+            # Validation du formulaire
+            submit_sav = st.form_submit_button("🚀 Enregistrer le dossier SAV")
+            
+            if submit_sav:
+                if not out_nom or not out_details:
+                    st.error("❌ Veuillez renseigner au moins le nom du fournisseur et la description du défaut.")
+                else:
+                    now_p = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+                    
+                    # Encodage des fichiers en base64 pour la BDD
+                    b64_facture = fichier_vers_b64(facture_file)
+                    b64_p1 = fichier_vers_b64(photo1_file)
+                    b64_p2 = fichier_vers_b64(photo2_file)
+                    b64_p3 = fichier_vers_b64(photo3_file)
+                    
+                    cursor.execute("""
+                        INSERT INTO sav_demandes (date_creation, nom_fournisseur, adresse, tel, mail, materiel_defaut, type_demande, statut, facture_b64, photo1_b64, photo2_b64, photo3_b64)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (now_p, out_nom, out_adr, out_tel, out_mail, out_details, type_demande, "En cours de réparation ⏳", b64_facture, b64_p1, b64_p2, b64_p3))
+                    conn.commit()
+                    st.success("✅ Fiche SAV ajoutée à la base de données ! Vous pouvez la retrouver et l'exporter en PDF dans l'onglet 'Suivi des Dossiers'.")
+
+    with sub_tab2:
+        st.subheader("Suivi des dossiers existants & Export PDF")
+        
+        # Récupération de l'historique des demandes
+        cursor.execute("SELECT id, date_creation, nom_fournisseur, adresse, tel, mail, materiel_defaut, type_demande, statut FROM sav_demandes ORDER BY date_creation DESC")
+        dossiers = cursor.fetchall()
+        
+        if not dossiers:
+            st.info("Aucun dossier SAV enregistré pour le moment.")
+        else:
+            for d in dossiers:
+                id_sav, d_crea, d_fourn, d_adr, d_tel, d_mail, d_details, d_type, d_statut = d
+                
+                # Mise en couleur selon le stade
+                border_color = "#f59e0b"  # orange par défaut
+                if "Défaut de fabrication" in d_statut: border_color = "#ef4444" # rouge
+                elif "Réparé" in d_statut: border_color = "#10b981" # vert
+                
+                with st.container(border=True):
+                    # En-tête de la carte de dossier
+                    col_header1, col_header2 = st.columns([7, 3])
+                    with col_header1:
+                        st.markdown(f"**Dossier N°{id_sav} — {d_fourn}** *(Créé le {d_crea})*")
+                        st.caption(f"Type : {d_type}")
+                    with col_header2:
+                        # Zone pour modifier dynamiquement le stade / statut du dossier
+                        nouveau_statut = st.selectbox(
+                            "Stade du dossier :",
+                            ["En cours de réparation ⏳", "Défaut de fabrication ⚠️", "Réparé ✅"],
+                            index=["En cours de réparation ⏳", "Défaut de fabrication ⚠️", "Réparé ✅"].index(d_statut) if d_statut in ["En cours de réparation ⏳", "Défaut de fabrication ⚠️", "Réparé ✅"] else 0,
+                            key=f"statut_sav_{id_sav}"
+                        )
+                        if nouveau_statut != d_statut:
+                            cursor.execute("UPDATE sav_demandes SET statut = ? WHERE id = ?", (nouveau_statut, id_sav))
                             conn.commit()
                             st.rerun()
-        else:
-            st.info("Aucun dossier SAV en cours pour le moment.")
-
-
+                    
+                    # Détails à l'intérieur d'un expander pour ne pas surcharger la page
+                    with st.expander("👁️ Voir les détails & Exporter"):
+                        st.write(f"**Description du problème :** {d_details}")
+                        st.write(f"**Contact Fournisseur :** Mail : {d_mail} | Tél : {d_tel}")
+                        
+                        # Bouton d'exportation PDF instantané
+                        data_pdf = {
+                            "nom": d_fourn, "adresse": d_adr, "tel": d_tel, 
+                            "mail": d_mail, "type_demande": d_type, "details": d_details
+                        }
+                        
+                        try:
+                            pdf_bytes = generer_pdf(data_pdf)
+                            st.download_button(
+                                label="📥 Télécharger la fiche en PDF",
+                                data=pdf_bytes,
+                                file_name=f"SAV_{id_sav}_{d_fourn.replace(' ', '_')}.pdf",
+                                mime="application/pdf",
+                                key=f"dl_pdf_{id_sav}"
+                            )
+                        except Exception as e:
+                            st.error(f"Erreur génération PDF : {e}")
+                            
+                        # Bouton de suppression définitive du dossier si besoin (Admin uniquement)
+                        if st.session_state.role == "Administrateur":
+                            if st.button("🗑️ Supprimer ce dossier SAV", key=f"del_sav_doc_{id_sav}"):
+                                cursor.execute("DELETE FROM sav_demandes WHERE id = ?", (id_sav,))
+                                conn.commit()
+                                st.rerun()
 # Page 3 Tchat de groupe et Tchat privé
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
