@@ -929,8 +929,7 @@ elif page == "🛠️ SAV & Réparations":
             # Ligne 1 : Info Client
             st.subheader("👤 Informations Client")
 
-            # Ligne 1 : Date de réception (déjà au bon endroit)
-            # (Garde ta variable existante si elle s'appelle autrement, ex: c_date)
+            # Ligne 1 : Date de réception
             date_reception = st.date_input("📅 Date de réception", datetime.now(ZoneInfo("Europe/Paris")))
 
             # Ligne 2 : Nom et Prénom sur la même ligne
@@ -941,7 +940,6 @@ elif page == "🛠️ SAV & Réparations":
                 client_prenom = st.text_input("👤 Prénom")
             
             # Ligne 3 : Adresse, Code Postal et Ville sur la même ligne
-            # On donne plus de largeur (3) à l'adresse qu'au CP (1) et à la Ville (2) pour que ce soit joli
             col_adr, col_cp, col_ville = st.columns([3, 1, 2])
             with col_adr:
                 client_adresse = st.text_input("🏠 Adresse")
@@ -960,82 +958,82 @@ elif page == "🛠️ SAV & Réparations":
             # Ligne 2 : Info Matériel
             st.subheader("🔧 Informations Matériel et Défauts")
 
-# On sépare en deux grandes colonnes (Gauche et Droite)
-col_mat_gauche, col_mat_droite = st.columns(2)
+            # On sépare en deux grandes colonnes (Gauche et Droite)
+            col_mat_gauche, col_mat_droite = st.columns(2)
 
-with col_mat_gauche:
-    # Ligne 1 : Désignation (Remplace l'ancien "Désignation de l'outil")
-    materiel_designation = st.text_input("📦 Désignation")
-    
-    # Ligne 2 : Référence ITEK et Quantité sur la même ligne
-    col_itek, col_qte = st.columns([3, 1])
-    with col_itek:
-        ref_itek = st.text_input("🏷️ Référence ITEK")
-    with col_qte:
-        # Utilisation d'un sélecteur de nombre pour la quantité
-        quantite = st.number_input("🔢 Quantité", min_value=1, value=1, step=1)
-        
-    # Ligne 3 : Référence Fournisseur et Nom Fournisseur sur la même ligne
-    col_ref_fourn, col_nom_fourn = st.columns(2)
-    with col_ref_fourn:
-        ref_fournisseur = st.text_input("🏷️ Référence Fournisseur")
-    with col_nom_fourn:
-        nom_fournisseur = st.text_input("🏭 Nom Fournisseur")
-        
-    # Ligne 4 : N° de série
-    num_serie = st.text_input("🔢 N° de série")
-
-with col_mat_droite:
-    # À DROITE - Ligne 1 (alignée avec désignation) : Motif
-    motif_defaut = st.text_area("📋 Motif (Description et défaut)", height=115) 
-    
-    # À DROITE - Ligne 2 : Accessoires fournis
-    accessoires_fournis = st.text_input("🎒 Accessoires fournis")
-    # Ligne 3 : Facture
-    st.subheader("🧾 Facturation")
-    col5, col6 = st.columns(2)
-    sav_num_facture = col5.text_input("Numéro Facture client")
-    sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
-
-    st.write("---")
-    # Ligne 4 : Photos de l'outil
-    st.subheader("📷 Photos de l'outil (Max 3)")
-    col7, col8, col9 = st.columns(3)
-    sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
-    sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
-    sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
-
-    submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
-
-    if submit_sav:
-        if sav_nom and sav_tel and sav_outil and sav_motif:
-            now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+            with col_mat_gauche:
+                # Ligne 1 : Désignation
+                materiel_designation = st.text_input("📦 Désignation")
+                
+                # Ligne 2 : Référence ITEK et Quantité sur la même ligne
+                col_itek, col_qte = st.columns([3, 1])
+                with col_itek:
+                    ref_itek = st.text_input("🏷️ Référence ITEK")
+                with col_qte:
+                    quantite = st.number_input("🔢 Quantité", min_value=1, value=1, step=1)
                     
-            # Transformation des images en Base64 pour la base de données
-            b64_p1 = encoder_image(sav_p1)
-            b64_p2 = encoder_image(sav_p2)
-            b64_p3 = encoder_image(sav_p3)
-            b64_facture = encoder_image(sav_photo_facture)
-
-            date_str = sav_date.strftime("%d/%m/%Y")
-
-                cursor.execute("""
-                    INSERT INTO sav (
-                        date_reception, nom_client, prenom_client, adresse, tel, mail, 
-                        designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
-                        motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
-                        cree_par, date_creation_brute
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
-                        sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
-                        sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
-                        st.session_state.user, now_brute))
+                # Ligne 3 : Référence Fournisseur et Nom Fournisseur sur la même ligne
+                col_ref_fourn, col_nom_fourn = st.columns(2)
+                with col_ref_fourn:
+                    ref_fournisseur = st.text_input("🏷️ Référence Fournisseur")
+                with col_nom_fourn:
+                    nom_fournisseur = st.text_input("🏭 Nom Fournisseur")
                     
-                conn.commit()
-                st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
-                st.rerun()
-            else:
-                st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
+                # Ligne 4 : N° de série
+                num_serie = st.text_input("🔢 N° de série")
+
+            with col_mat_droite:
+                # À DROITE - Ligne 1 : Motif
+                motif_defaut = st.text_area("📋 Motif (Description et défaut)", height=115) 
+                
+                # À DROITE - Ligne 2 : Accessoires fournis
+                accessoires_fournis = st.text_input("🎒 Accessoires fournis")
+                
+                # Ligne 3 : Facture
+                st.subheader("🧾 Facturation")
+                col5, col6 = st.columns(2)
+                sav_num_facture = col5.text_input("Numéro Facture client")
+                sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
+
+            st.write("---")
+            # Ligne 4 : Photos de l'outil
+            st.subheader("📷 Photos de l'outil (Max 3)")
+            col7, col8, col9 = st.columns(3)
+            sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
+            sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
+            sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
+
+            submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
+
+            if submit_sav:
+                if sav_nom and sav_tel and sav_outil and sav_motif:
+                    now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+                                        
+                    # Transformation des images en Base64 pour la base de données
+                    b64_p1 = encoder_image(sav_p1)
+                    b64_p2 = encoder_image(sav_p2)
+                    b64_p3 = encoder_image(sav_p3)
+                    b64_facture = encoder_image(sav_photo_facture)
+
+                    date_str = sav_date.strftime("%d/%m/%Y")
+
+                    cursor.execute("""
+                        INSERT INTO sav (
+                            date_reception, nom_client, prenom_client, adresse, tel, mail, 
+                            designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
+                            motif_defaut, num_facture, photo_1, photo_2, photo_3, photo_facture, 
+                            cree_par, date_creation_brute
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (date_str, sav_nom, sav_prenom, sav_adresse, sav_tel, sav_mail, 
+                            sav_outil, sav_ref_fournisseur, sav_ref_itek, sav_nom_fournisseur, 
+                            sav_motif, sav_num_facture, b64_p1, b64_p2, b64_p3, b64_facture, 
+                            st.session_state.user, now_brute))
+                        
+                    conn.commit()
+                    st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
+                    st.rerun()
+                else:
+                    st.error("❌ Merci de remplir au minimum les champs avec un astérisque (*) : Nom, Tel, Outil et Défaut.")
 
     # SOUS-ONGLET 2 : LE SUIVI
     with onglet_suivi:
@@ -1077,8 +1075,6 @@ with col_mat_droite:
                             st.rerun()
         else:
             st.info("Aucun dossier SAV en cours pour le moment.")
-
-
 # Page 3 Tchat de groupe et Tchat privé
 elif page == "💬 Zone Tchat":
     st.title("💬 Centre de Communication")
