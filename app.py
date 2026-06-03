@@ -991,33 +991,33 @@ with col_mat_droite:
     
     # À DROITE - Ligne 2 : Accessoires fournis
     accessoires_fournis = st.text_input("🎒 Accessoires fournis")
-            # Ligne 3 : Facture
-            st.subheader("🧾 Facturation")
-            col5, col6 = st.columns(2)
-            sav_num_facture = col5.text_input("Numéro Facture client")
-            sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
+    # Ligne 3 : Facture
+    st.subheader("🧾 Facturation")
+    col5, col6 = st.columns(2)
+    sav_num_facture = col5.text_input("Numéro Facture client")
+    sav_photo_facture = col6.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
 
-            st.write("---")
-            # Ligne 4 : Photos de l'outil
-            st.subheader("📷 Photos de l'outil (Max 3)")
-            col7, col8, col9 = st.columns(3)
-            sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
-            sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
-            sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
+    st.write("---")
+    # Ligne 4 : Photos de l'outil
+    st.subheader("📷 Photos de l'outil (Max 3)")
+    col7, col8, col9 = st.columns(3)
+    sav_p1 = col7.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
+    sav_p2 = col8.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
+    sav_p3 = col9.file_uploader("Photo Défaut 3", type=["jpg", "jpeg", "png"])
 
-            submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
+    submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
 
-            if submit_sav:
-                if sav_nom and sav_tel and sav_outil and sav_motif:
-                    now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
+        if submit_sav:
+            if sav_nom and sav_tel and sav_outil and sav_motif:
+                now_brute = datetime.now(ZoneInfo("Europe/Paris")).strftime("%Y-%m-%d %H:%M:%S")
                     
-                    # Transformation des images en Base64 pour la base de données
-                    b64_p1 = encoder_image(sav_p1)
-                    b64_p2 = encoder_image(sav_p2)
-                    b64_p3 = encoder_image(sav_p3)
-                    b64_facture = encoder_image(sav_photo_facture)
+                # Transformation des images en Base64 pour la base de données
+                b64_p1 = encoder_image(sav_p1)
+                b64_p2 = encoder_image(sav_p2)
+                b64_p3 = encoder_image(sav_p3)
+                b64_facture = encoder_image(sav_photo_facture)
 
-                    date_str = sav_date.strftime("%d/%m/%Y")
+                date_str = sav_date.strftime("%d/%m/%Y")
 
                     cursor.execute("""
                         INSERT INTO sav (
