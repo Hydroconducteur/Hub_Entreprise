@@ -958,16 +958,39 @@ elif page == "🛠️ SAV & Réparations":
 
             st.write("---")
             # Ligne 2 : Info Matériel
-            st.subheader("🔧 Informations Matériel & Défaut")
-            col3, col4 = st.columns(2)
-            sav_outil = col3.text_input("Désignation outil *")
-            sav_motif = col4.text_area("Motif / Description défaut *")
-            
-            sav_nom_fournisseur = col3.text_input("Nom fournisseur")
-            sav_ref_fournisseur = col4.text_input("Référence fournisseur")
-            sav_ref_itek = col3.text_input("Référence ITEK")
+            st.subheader("🔧 Informations Matériel et Défauts")
 
-            st.write("---")
+# On sépare en deux grandes colonnes (Gauche et Droite)
+col_mat_gauche, col_mat_droite = st.columns(2)
+
+with col_mat_gauche:
+    # Ligne 1 : Désignation (Remplace l'ancien "Désignation de l'outil")
+    materiel_designation = st.text_input("📦 Désignation")
+    
+    # Ligne 2 : Référence ITEK et Quantité sur la même ligne
+    col_itek, col_qte = st.columns([3, 1])
+    with col_itek:
+        ref_itek = st.text_input("🏷️ Référence ITEK")
+    with col_qte:
+        # Utilisation d'un sélecteur de nombre pour la quantité
+        quantite = st.number_input("🔢 Quantité", min_value=1, value=1, step=1)
+        
+    # Ligne 3 : Référence Fournisseur et Nom Fournisseur sur la même ligne
+    col_ref_fourn, col_nom_fourn = st.columns(2)
+    with col_ref_fourn:
+        ref_fournisseur = st.text_input("🏷️ Référence Fournisseur")
+    with col_nom_fourn:
+        nom_fournisseur = st.text_input("🏭 Nom Fournisseur")
+        
+    # Ligne 4 : N° de série
+    num_serie = st.text_input("🔢 N° de série")
+
+with col_mat_droite:
+    # À DROITE - Ligne 1 (alignée avec désignation) : Motif
+    motif_defaut = st.text_area("📋 Motif (Description et défaut)", height=115) 
+    
+    # À DROITE - Ligne 2 : Accessoires fournis
+    accessoires_fournis = st.text_input("🎒 Accessoires fournis")
             # Ligne 3 : Facture
             st.subheader("🧾 Facturation")
             col5, col6 = st.columns(2)
