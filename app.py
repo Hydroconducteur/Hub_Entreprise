@@ -387,6 +387,8 @@ def initialiser_structure_base():
             nom_fournisseur TEXT,
             motif_defaut TEXT,
             num_facture TEXT,
+            date_achat TEXT,
+            sous_garantie TEXT,
             photo_1 TEXT,
             photo_2 TEXT,
             photo_3 TEXT,
@@ -396,6 +398,11 @@ def initialiser_structure_base():
             date_creation_brute TEXT
         )
     """)
+    # Migration : ajout des colonnes si la table existait avant
+    try: cursor.execute("ALTER TABLE sav ADD COLUMN date_achat TEXT DEFAULT ''")
+    except: pass
+    try: cursor.execute("ALTER TABLE sav ADD COLUMN sous_garantie TEXT DEFAULT 'Non'")
+    except: pass
 
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
     except sqlite3.OperationalError: pass
@@ -448,7 +455,6 @@ def encoder_image(fichier_upload):
     return ""
 
 # Algorithme de nettoyage automatique + archivage
-@st.cache_data(ttl=60)
 def nettoyer_et_archiver_data():
     try:
         now_paris = datetime.now(ZoneInfo("Europe/Paris"))
@@ -486,7 +492,10 @@ def nettoyer_et_archiver_data():
         pass
     return True
 
-nettoyer_et_archiver_data()
+# Appel unique par session (évite les ralentissements à chaque rerun)
+if "nettoyage_fait" not in st.session_state:
+    nettoyer_et_archiver_data()
+    st.session_state.nettoyage_fait = True
 
 from fpdf import FPDF
 import tempfile
@@ -548,7 +557,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
     pdf.ln(4)
             
-    # --- 1. PHOTOS DES DÉFAUTS (EN COLONNE / L'UNE SOUS L'AUTRE) ---
+    # --- 1. PHOTOS DES DÉFAUTS EN DISPOSITION VERTICALE (une par ligne) ---
     defauts = [p1, p2, p3]
     valid_defauts = []
     
@@ -565,49 +574,20 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     if valid_defauts:
         pdf.set_font("helvetica", "B", 12)
         pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
-        
-        img_w = 140  # Les photos feront 14 cm de large (très lisible)
-        x_pos = (210 - img_w) / 2  # Centre parfaitement l'image horizontalement
-        
+
+        # Largeur fixe centrée — chaque photo prend toute la largeur utile
+        img_w = 170  # mm, presque toute la largeur de la page A4 (210 - marges)
+        x_center = (210 - img_w) / 2
+
         for tmp_path in valid_defauts:
-            try:
-                # On calcule la vraie hauteur pour ne pas déformer la photo
-                with Image.open(tmp_path) as img:
-                    w_px, h_px = img.size
-                    img_h = img_w * (h_px / w_px)
-                
-                # Si la photo déborde en bas de la page, on en crée une nouvelle
-                if pdf.get_y() + img_h + 10 > 280:
-                    pdf.add_page()
-                
-                # Placement de l'image
-                pdf.image(tmp_path, x=x_pos, y=pdf.get_y() + 5, w=img_w)
-                
-                # On déplace le "curseur" PDF sous la photo pour la suivante
-                pdf.set_y(pdf.get_y() + img_h + 10)
-            except Exception:
-                pass
-        
-        # On vide la mémoire temporaire
-        for tmp_path in valid_defauts:
-            try: os.unlink(tmp_path)
-            except: pass
-        
-        # L'algorithme calcule la taille parfaite pour que les photos soient le plus grand possible
-        if num_imgs == 1:
-            img_w = 120
-        elif num_imgs == 2:
-            img_w = 92
-        else:
-            img_w = 60
-            
-        x_start = 10
-        y_start = pdf.get_y()
-        
-        for i, tmp_path in enumerate(valid_defauts):
-            x_pos = x_start + i * (img_w + gap)
-            pdf.image(tmp_path, x=x_pos, y=y_start, w=img_w)
-        
+            # Si la photo ne tient plus sur la page courante, on en ajoute une nouvelle
+            if pdf.get_y() + 80 > 270:
+                pdf.add_page()
+            y_pos = pdf.get_y()
+            pdf.image(tmp_path, x=x_center, y=y_pos, w=img_w)
+            # Avancer le curseur sous l'image (hauteur estimée proportionnelle)
+            pdf.ln(85)
+
         # Nettoyage des fichiers temporaires
         for tmp_path in valid_defauts:
             try: os.unlink(tmp_path)
@@ -704,9 +684,16 @@ with st.sidebar:
         
     st.write("---")
     st.title("🗺️ Menu Principal")
-    # AJOUT DE L'ONGLET SAV ICI
-    liste_pages = ["📋 Planning de l'équipe", "🛠️ SAV & Réparations", "💬 Zone Tchat", "📌 Mes Rappels", "📦 Demande Fournisseur"]
-    if st.session_state.role == "Administrateur": liste_pages.append("🗄️ Archives (6 mois)")
+    # Menu réorganisé : flux logique quotidien
+    liste_pages = [
+        "📋 Planning de l'équipe",
+        "💬 Zone Tchat",
+        "📌 Mes Rappels",
+        "🛠️ SAV & Réparations",
+        "📦 Demande Fournisseur",
+    ]
+    if st.session_state.role == "Administrateur":
+        liste_pages.append("🗄️ Archives (6 mois)")
     page = st.radio("Aller vers :", liste_pages, key="navigation_page")
 
     if st.session_state.role == "Administrateur":
@@ -750,8 +737,11 @@ with st.sidebar:
             if c_data:
                 st.write("Lien **Christophe** :")
                 st.code(f"{base_url}/?qui=Christophe&code={c_data[1]}", language="text")
-            
-            for u in membres:
+
+            # On re-requête pour avoir la liste complète (scope indépendant)
+            cursor.execute("SELECT prenom, code_secret FROM utilisateurs WHERE prenom != 'Christophe' ORDER BY prenom ASC")
+            membres_liens = cursor.fetchall()
+            for u in membres_liens:
                 st.write(f"Lien **{u[0]}** :")
                 st.code(f"{base_url}/?qui={u[0]}&code={u[1]}", language="text")
 
@@ -1092,8 +1082,15 @@ elif page == "🛠️ SAV & Réparations":
                 # Le déballage correspond maintenant à 100% à la requête ci-dessus
                 d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_date_achat, d_garantie, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
                 
-                with st.expander(f"🛠️ Dossier #{d_id} - {d_outil} | Client : {d_nom} {d_prenom} | Statut : {d_statut}"):
-                    c1, c2 = st.columns(2)
+                with st.expander(f"🛠️ Dossier #{d_id} — {d_outil} | {d_nom} {d_prenom} | {'✅ Terminé' if d_statut == 'Terminé' else '⏳ En cours'}"):
+                    col_statut_row = st.columns([3, 1])
+                    with col_statut_row[1]:
+                        nouveau_statut = st.selectbox("Statut du dossier", ["En cours", "Terminé"], index=0 if d_statut == "En cours" else 1, key=f"statut_{d_id}")
+                        if nouveau_statut != d_statut:
+                            cursor.execute("UPDATE sav SET statut = ? WHERE id = ?", (nouveau_statut, d_id))
+                            conn.commit()
+                            st.rerun()
+                    c1, c2 = col_statut_row[0].columns(2)
                     c1.markdown(f"**Reçu le :** {d_date} par {d_cree_par}")
                     c1.markdown(f"**Contact :** {d_tel} / {d_mail}")
                     c1.markdown(f"**Adresse :** {d_adresse}")
@@ -1109,9 +1106,9 @@ elif page == "🛠️ SAV & Réparations":
                     st.write("**Photos rattachées au dossier :**")
                     col_p1, col_p2, col_p3, col_pfac = st.columns(4)
                     
-                    if d_p1: col_p1.image(base64.b64decode(d_p1), caption="Défaut 1", use_container_width=True)
-                    if d_p2: col_p2.image(base64.b64decode(d_p2), caption="Défaut 2", use_container_width=True)
-                    if d_p3: col_p3.image(base64.b64decode(d_p3), caption="Défaut 3", use_container_width=True)
+                    if d_p1: col_p1.image(base64.b64decode(d_p1), caption="Plaque signalétique", use_container_width=True)
+                    if d_p2: col_p2.image(base64.b64decode(d_p2), caption="Défaut 1", use_container_width=True)
+                    if d_p3: col_p3.image(base64.b64decode(d_p3), caption="Défaut 2", use_container_width=True)
                     if d_pfac: col_pfac.image(base64.b64decode(d_pfac), caption="Facture", use_container_width=True)
 
                     if st.session_state.role == "Administrateur":
@@ -1237,7 +1234,7 @@ elif page == "🗄️ Archives (6 mois)" and st.session_state.role == "Administr
                 st.rerun()
         st.write("---")
 
-    onglet_taches, = st.tabs(["📋 Archives Tâches"])
+    onglet_taches = st.tabs(["📋 Archives Tâches"])[0]
     
     with onglet_taches:
         cursor.execute("""
@@ -1349,7 +1346,7 @@ elif page == "📦 Demande Fournisseur":
         
         st.write("---")
         
-  # 2. Affichage en colonnes
+        # 2. Affichage en colonnes
         col_gauche, col_droite = st.columns(2)
         
         with col_gauche:
