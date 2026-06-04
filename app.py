@@ -586,7 +586,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
             y_pos = pdf.get_y()
             pdf.image(tmp_path, x=x_center, y=y_pos, w=img_w)
             # Avancer le curseur sous l'image (hauteur estimée proportionnelle)
-            pdf.ln(85)
+            pdf.ln(25)
 
         # Nettoyage des fichiers temporaires
         for tmp_path in valid_defauts:
