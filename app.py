@@ -492,7 +492,7 @@ from fpdf import FPDF
 import tempfile
 import os
 
-def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac):
+def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac, accessoires=""):
     pdf = FPDF()
     pdf.add_page()
     
@@ -504,7 +504,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.set_font("helvetica", "", 11)
     y_start = pdf.get_y()
     
-    # Colonne Gauche - Adresse MAUPU complète
+    # Colonne Gauche
     pdf.set_xy(10, y_start)
     pdf.cell(100, 6, "3 rue du Mail Est", ln=1)
     pdf.cell(100, 6, "45170 Neuville-Aux-Bois", ln=1)
@@ -512,19 +512,17 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.cell(100, 6, "quincaillerie.maupu@cegetel.net", ln=1)
     y_gauche_fin = pdf.get_y()
     
-    # Colonne Droite - Informations Fournisseur
+    # Colonne Droite
     pdf.set_xy(110, y_start)
     pdf.multi_cell(90, 6, f_adresse if f_adresse else "Adresse non renseignée")
-    
     y_apres_adresse = pdf.get_y()
     pdf.set_xy(110, y_apres_adresse + 2) 
     pdf.cell(90, 6, f"Tel : {f_tel}", ln=1)
-    
     pdf.set_xy(110, pdf.get_y())
     pdf.cell(90, 6, f"Email : {f_mail}", ln=1)
     y_droite_fin = pdf.get_y()
     
-    # On se positionne sous la colonne la plus longue
+    # Repositionnement en dessous
     pdf.set_y(max(y_gauche_fin, y_droite_fin) + 8)
     
     # --- TITRE DE LA DEMANDE ---
@@ -543,30 +541,17 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     if ref_produit:
         pdf.cell(0, 6, f"- Reference du produit : {ref_produit}", ln=1)
         
+    # L'option Accessoires s'affiche uniquement si elle a été remplie !
+    if accessoires and accessoires.strip():
+        pdf.cell(0, 6, f"- Accessoires fournis : {accessoires}", ln=1)
+        
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
     pdf.ln(4)
-    
-    # --- 1. PREUVE D'ACHAT (FACTURE) ---
-    if p_fac:
-        try:
-            img_data = base64.b64decode(p_fac.split("base64,")[-1])
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-                tmp.write(img_data)
-                tmp_path = tmp.name
             
-            pdf.set_font("helvetica", "B", 10)
-            pdf.cell(0, 6, "1. Preuve d'achat (Facture) :", ln=1)
-            pdf.image(tmp_path, w=40) # Taille réduite à 40mm pour économiser de l'espace vertical
-            pdf.ln(4)
-            os.unlink(tmp_path)
-        except Exception:
-            pass
-            
-    # --- 2. PHOTOS DES DÉFAUTS (ALIGNÉES CÔTE À CÔTE) ---
+    # --- 1. PHOTOS DES DÉFAUTS (AGRANDIES ET CENTRÉES SUR LA PAGE 1) ---
     defauts = [p1, p2, p3]
     valid_defauts = []
     
-    # Décodage et enregistrement temporaire des photos de défauts présentes
     for p in defauts:
         if p:
             try:
@@ -578,35 +563,52 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
                 pass
 
     if valid_defauts:
-        pdf.set_font("helvetica", "B", 10)
-        pdf.cell(0, 6, "2. Photos default constates :", ln=1)
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
         
         num_imgs = len(valid_defauts)
-        gap = 4 # Espace en mm entre les photos
+        gap = 5 # Espace entre les photos
         
-        # Calcul automatique de la largeur de chaque image (Max disponible : 190mm)
-        img_w = (190 - (gap * (num_imgs - 1))) / num_imgs
-        
-        # On limite la taille si une seule image est présente pour éviter qu'elle soit géante
-        if img_w > 55: 
-            img_w = 55 
+        # L'algorithme calcule la taille parfaite pour que les photos soient le plus grand possible
+        if num_imgs == 1:
+            img_w = 120
+        elif num_imgs == 2:
+            img_w = 92
+        else:
+            img_w = 60
             
         x_start = 10
         y_start = pdf.get_y()
         
-        # Placement horizontal chirurgical
         for i, tmp_path in enumerate(valid_defauts):
             x_pos = x_start + i * (img_w + gap)
             pdf.image(tmp_path, x=x_pos, y=y_start, w=img_w)
         
-        # Nettoyage immédiat des fichiers temporaires
+        # Nettoyage des fichiers temporaires
         for tmp_path in valid_defauts:
-            try:
-                os.unlink(tmp_path)
-            except:
-                pass
+            try: os.unlink(tmp_path)
+            except: pass
 
-    # --- GÉNÉRATION EN BYTES SÉCURISÉE ---
+    # --- 2. FACTURE CLIENT EN PLEINE PAGE (PAGE 2) ---
+    if p_fac:
+        try:
+            img_data = base64.b64decode(p_fac.split("base64,")[-1])
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                tmp.write(img_data)
+                tmp_fac_path = tmp.name
+            
+            # On ajoute une page exprès pour la facture
+            pdf.add_page()
+            pdf.set_font("helvetica", "B", 14)
+            pdf.cell(0, 10, "PREUVE D'ACHAT / FACTURE CLIENT", ln=1, align="C")
+            pdf.ln(5)
+            # Image en taille géante (190mm de large)
+            pdf.image(tmp_fac_path, x=10, w=190)
+            os.unlink(tmp_fac_path)
+        except Exception:
+            pass
+
+    # --- GÉNÉRATION DU PDF ---
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
         pdf_path = tmp_pdf.name
         
@@ -618,7 +620,6 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     os.unlink(pdf_path)
     
     return pdf_bytes
-
 # Gestion des sessions
 if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
@@ -1341,8 +1342,9 @@ elif page == "📦 Demande Fournisseur":
             st.subheader("🔧 Matériel concerné (Issu du SAV)")
             st.info(f"**Outil :** {d_outil}\n\n**Défaut :** {d_motif}")
             
-            # --- NOUVEAUTÉ : Champ facultatif pour la référence ---
-            ref_produit = st.text_input("🏷️ Référence du produit (Facultatif)", placeholder="Ex : REF-45892A")
+            # La référence devient normale et on ajoute les accessoires juste en dessous
+            ref_produit = st.text_input("🏷️ Référence du produit", placeholder="Ex : REF-45892A")
+            accessoires = st.text_input("🎒 Accessoires fournis (Facultatif)", placeholder="Ex : Batterie, Chargeur...")
             
         with col_droite:
             st.subheader("🏭 Destinataire (Fournisseur)")
@@ -1367,7 +1369,7 @@ elif page == "📦 Demande Fournisseur":
                 # On ajoute ref_produit en 2e position des paramètres !
                 pdf_bytes = generer_pdf_fournisseur(
                     d_outil, ref_produit, d_motif, f_nom, f_adresse, f_tel, f_mail, 
-                    type_demande, d_p1, d_p2, d_p3, d_pfac
+                    type_demande, d_p1, d_p2, d_p3, d_pfac, accessoires
                 )
                 
             st.success("✅ Le document est prêt !")
