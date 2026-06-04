@@ -438,7 +438,7 @@ def encoder_image(fichier_upload):
             img = Image.open(fichier_upload)
             
             # 2. On la redimensionne (max 800x800 pixels pour garder de la qualité mais un petit poids)
-            img.thumbnail((700, 700))
+            img.thumbnail((800, 800))
             
             # 3. Si c'est un PNG transparent, on lui met un fond blanc pour le transformer en JPEG
             if img.mode in ("RGBA", "P"):
@@ -576,8 +576,8 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
 
         # Largeur fixe centrée — chaque photo prend toute la largeur utile
-        img_w = 170  # mm, presque toute la largeur de la page A4 (210 - marges)
-        x_center = (210 - img_w) / 2
+        img_w = 160  # mm, presque toute la largeur de la page A4 (210 - marges)
+        x_center = (190 - img_w) / 2
 
         for tmp_path in valid_defauts:
             # Si la photo ne tient plus sur la page courante, on en ajoute une nouvelle
