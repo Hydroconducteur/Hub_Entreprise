@@ -607,7 +607,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
             pdf.cell(0, 10, "PREUVE D'ACHAT / FACTURE CLIENT", ln=1, align="C")
             pdf.ln(5)
             # Image en taille géante (190mm de large)
-            pdf.image(tmp_fac_path, x=10, w=190)
+            pdf.image(tmp_fac_path, x=10, w=170)
             os.unlink(tmp_fac_path)
         except Exception:
             pass
