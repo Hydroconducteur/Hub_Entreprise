@@ -581,12 +581,12 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
 
         for tmp_path in valid_defauts:
             # Si la photo ne tient plus sur la page courante, on en ajoute une nouvelle
-            if pdf.get_y() + 80 > 250:
+            if pdf.get_y() + 60 > 240:
                 pdf.add_page()
             y_pos = pdf.get_y()
             pdf.image(tmp_path, x=x_center, y=y_pos, w=img_w)
             # Avancer le curseur sous l'image (hauteur estimée proportionnelle)
-            pdf.ln(45)
+            pdf.ln(40)
 
         # Nettoyage des fichiers temporaires
         for tmp_path in valid_defauts:
