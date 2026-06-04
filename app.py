@@ -438,7 +438,7 @@ def encoder_image(fichier_upload):
             img = Image.open(fichier_upload)
             
             # 2. On la redimensionne (max 800x800 pixels pour garder de la qualité mais un petit poids)
-            img.thumbnail((800, 800))
+            img.thumbnail((700, 700))
             
             # 3. Si c'est un PNG transparent, on lui met un fond blanc pour le transformer en JPEG
             if img.mode in ("RGBA", "P"):
