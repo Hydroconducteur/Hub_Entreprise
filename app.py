@@ -548,7 +548,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
     pdf.ln(4)
             
-    # --- 1. PHOTOS DES DÉFAUTS (AGRANDIES ET CENTRÉES SUR LA PAGE 1) ---
+    # --- 1. PHOTOS DES DÉFAUTS (L'UNE EN DESSOUS DE L'AUTRE) ---
     defauts = [p1, p2, p3]
     valid_defauts = []
     
@@ -566,8 +566,32 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         pdf.set_font("helvetica", "B", 12)
         pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
         
-        num_imgs = len(valid_defauts)
-        gap = 5 # Espace entre les photos
+        img_w = 140  # Les photos feront 14 cm de large (très lisible)
+        x_pos = (210 - img_w) / 2  # Permet de centrer parfaitement l'image sur la page
+        
+        for tmp_path in valid_defauts:
+            try:
+                # On calcule la vraie hauteur de la photo pour conserver les proportions
+                with Image.open(tmp_path) as img:
+                    w_px, h_px = img.size
+                    img_h = img_w * (h_px / w_px)
+                
+                # SÉCURITÉ : Si l'image n'a plus de place en bas de la page, on saute à la page suivante
+                if pdf.get_y() + img_h + 10 > 280:
+                    pdf.add_page()
+                
+                # On place l'image
+                pdf.image(tmp_path, x=x_pos, y=pdf.get_y() + 5, w=img_w)
+                
+                # On descend le "curseur" du PDF en dessous de la photo qu'on vient d'ajouter
+                pdf.set_y(pdf.get_y() + img_h + 10)
+            except Exception:
+                pass
+        
+        # Nettoyage des fichiers temporaires pour ne pas saturer le serveur
+        for tmp_path in valid_defauts:
+            try: os.unlink(tmp_path)
+            except: pass
         
         # L'algorithme calcule la taille parfaite pour que les photos soient le plus grand possible
         if num_imgs == 1:
