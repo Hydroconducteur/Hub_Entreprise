@@ -548,7 +548,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
     pdf.ln(4)
             
-    # --- 1. PHOTOS DES DÉFAUTS (L'UNE EN DESSOUS DE L'AUTRE) ---
+    # --- 1. PHOTOS DES DÉFAUTS (EN COLONNE / L'UNE SOUS L'AUTRE) ---
     defauts = [p1, p2, p3]
     valid_defauts = []
     
@@ -567,28 +567,28 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
         
         img_w = 140  # Les photos feront 14 cm de large (très lisible)
-        x_pos = (210 - img_w) / 2  # Permet de centrer parfaitement l'image sur la page
+        x_pos = (210 - img_w) / 2  # Centre parfaitement l'image horizontalement
         
         for tmp_path in valid_defauts:
             try:
-                # On calcule la vraie hauteur de la photo pour conserver les proportions
+                # On calcule la vraie hauteur pour ne pas déformer la photo
                 with Image.open(tmp_path) as img:
                     w_px, h_px = img.size
                     img_h = img_w * (h_px / w_px)
                 
-                # SÉCURITÉ : Si l'image n'a plus de place en bas de la page, on saute à la page suivante
+                # Si la photo déborde en bas de la page, on en crée une nouvelle
                 if pdf.get_y() + img_h + 10 > 280:
                     pdf.add_page()
                 
-                # On place l'image
+                # Placement de l'image
                 pdf.image(tmp_path, x=x_pos, y=pdf.get_y() + 5, w=img_w)
                 
-                # On descend le "curseur" du PDF en dessous de la photo qu'on vient d'ajouter
+                # On déplace le "curseur" PDF sous la photo pour la suivante
                 pdf.set_y(pdf.get_y() + img_h + 10)
             except Exception:
                 pass
         
-        # Nettoyage des fichiers temporaires pour ne pas saturer le serveur
+        # On vide la mémoire temporaire
         for tmp_path in valid_defauts:
             try: os.unlink(tmp_path)
             except: pass
