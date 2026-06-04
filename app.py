@@ -1332,7 +1332,8 @@ elif page == "📦 Demande Fournisseur":
             st.subheader("🏢 Expéditeur")
             # Attention : il y a deux espaces à la fin de chaque ligne ci-dessous !
             st.markdown("""
-            **Quincaillerie MAUPU** 3 rue du Mail Est  
+            **Quincaillerie MAUPU** 
+            3 rue du Mail Est  
             45170 Neuville-Aux-Bois  
             02 38 91 00 15  
             quincaillerie.maupu@cegetel.net
