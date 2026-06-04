@@ -576,8 +576,8 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
 
         # Largeur fixe centrée — chaque photo prend toute la largeur utile
-        img_w = 140  # mm, presque toute la largeur de la page A4 (210 - marges)
-        x_center = (180 - img_w) / 2
+        img_w = 120  # mm, presque toute la largeur de la page A4 (210 - marges)
+        x_center = (160 - img_w) / 2
 
         for tmp_path in valid_defauts:
             # Si la photo ne tient plus sur la page courante, on en ajoute une nouvelle
