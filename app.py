@@ -395,13 +395,16 @@ def initialiser_structure_base():
             photo_facture TEXT,
             statut TEXT DEFAULT 'En cours',
             cree_par TEXT,
-            date_creation_brute TEXT
+            date_creation_brute TEXT,
+            quantite INTEGER DEFAULT 1
         )
     """)
     # Migration : ajout des colonnes si la table existait avant
     try: cursor.execute("ALTER TABLE sav ADD COLUMN date_achat TEXT DEFAULT ''")
     except: pass
     try: cursor.execute("ALTER TABLE sav ADD COLUMN sous_garantie TEXT DEFAULT 'Non'")
+    except: pass
+    try: cursor.execute("ALTER TABLE sav ADD COLUMN quantite INTEGER DEFAULT 1")
     except: pass
 
     try: cursor.execute("ALTER TABLE planning ADD COLUMN priorite TEXT DEFAULT '🟢 Pas très important'")
@@ -501,7 +504,32 @@ from fpdf import FPDF
 import tempfile
 import os
 
-def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac, accessoires=""):
+def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac, accessoires="", sous_garantie="Non", quantite=1):
+    # Import PIL pour calculer les dimensions réelles des images
+    try:
+        from PIL import Image as PILImage
+        PIL_DISPO = True
+    except ImportError:
+        PIL_DISPO = False
+
+    def dims_image_pdf(img_path, max_w_mm, max_h_mm):
+        """Calcule (largeur, hauteur) en mm en respectant ratio et contraintes max."""
+        if PIL_DISPO:
+            try:
+                with PILImage.open(img_path) as im:
+                    px_w, px_h = im.size
+                ratio = px_h / px_w
+                h_depuis_w = max_w_mm * ratio
+                if h_depuis_w <= max_h_mm:
+                    return max_w_mm, h_depuis_w
+                # Trop haute → contraindre par la hauteur
+                return max_h_mm / ratio, max_h_mm
+            except Exception:
+                pass
+        # Fallback sans PIL : on suppose ratio paysage 4:3
+        h_est = max_w_mm * 0.75
+        return max_w_mm, min(h_est, max_h_mm)
+
     pdf = FPDF()
     pdf.add_page()
     
@@ -549,15 +577,31 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     
     if ref_produit:
         pdf.cell(0, 6, f"- Reference du produit : {ref_produit}", ln=1)
+
+    # Quantité affichée uniquement si supérieure à 1
+    try:
+        qte_int = int(quantite)
+    except (TypeError, ValueError):
+        qte_int = 1
+    if qte_int > 1:
+        pdf.cell(0, 6, f"- Quantite : {qte_int}", ln=1)
+
+    # Sous garantie affiché uniquement si Oui
+    if sous_garantie and str(sous_garantie).strip() == "Oui":
+        pdf.set_font("helvetica", "B", 11)
+        pdf.set_text_color(0, 120, 0)  # Vert pour la mettre en valeur
+        pdf.cell(0, 6, "- Sous garantie : OUI", ln=1)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font("helvetica", "", 11)
         
-    # L'option Accessoires s'affiche uniquement si elle a été remplie !
+    # L'option Accessoires s'affiche uniquement si elle a été remplie
     if accessoires and accessoires.strip():
         pdf.cell(0, 6, f"- Accessoires fournis : {accessoires}", ln=1)
         
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
     pdf.ln(4)
             
-    # --- 1. PHOTOS DES DÉFAUTS EN DISPOSITION VERTICALE (une par ligne) ---
+    # --- PHOTOS DES DÉFAUTS EN DISPOSITION VERTICALE — TOUTES SUR LA PAGE 1 ---
     defauts = [p1, p2, p3]
     valid_defauts = []
     
@@ -574,26 +618,31 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     if valid_defauts:
         pdf.set_font("helvetica", "B", 12)
         pdf.cell(0, 8, "Photos du materiel / defauts constates :", ln=1)
+        pdf.ln(2)
 
-        # Largeur fixe centrée — chaque photo prend toute la largeur utile
-        img_w = 100  # mm, presque toute la largeur de la page A4 (210 - marges)
-        x_center = (120 - img_w) / 2
+        nb_imgs = len(valid_defauts)
+        gap_mm = 5  # espace entre les photos
+        marge_bas = 15  # marge de sécurité en bas de page
+
+        # Espace vertical disponible jusqu'au bas de la page
+        espace_total = (297 - marge_bas) - pdf.get_y()
+        # Hauteur max allouée à chaque image (répartition égale, min 25mm)
+        max_h_par_img = max(25, (espace_total - gap_mm * (nb_imgs - 1)) / nb_imgs)
+        max_w_par_img = 170  # largeur max en mm (page A4 = 210, marges = 2x20)
 
         for tmp_path in valid_defauts:
-            # Si la photo ne tient plus sur la page courante, on en ajoute une nouvelle
-            if pdf.get_y() + 60 > 240:
-                pdf.add_page()
+            w_img, h_img = dims_image_pdf(tmp_path, max_w_par_img, max_h_par_img)
+            x_center = (210 - w_img) / 2
             y_pos = pdf.get_y()
-            pdf.image(tmp_path, x=x_center, y=y_pos, w=img_w)
-            # Avancer le curseur sous l'image (hauteur estimée proportionnelle)
-            pdf.ln(40)
+            pdf.image(tmp_path, x=x_center, y=y_pos, w=w_img, h=h_img)
+            pdf.ln(h_img + gap_mm)
 
         # Nettoyage des fichiers temporaires
         for tmp_path in valid_defauts:
             try: os.unlink(tmp_path)
             except: pass
 
-    # --- 2. FACTURE CLIENT EN PLEINE PAGE (PAGE 2) ---
+    # --- FACTURE CLIENT EN PLEINE PAGE DÉDIÉE ---
     if p_fac:
         try:
             img_data = base64.b64decode(p_fac.split("base64,")[-1])
@@ -601,12 +650,10 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
                 tmp.write(img_data)
                 tmp_fac_path = tmp.name
             
-            # On ajoute une page exprès pour la facture
             pdf.add_page()
             pdf.set_font("helvetica", "B", 14)
             pdf.cell(0, 10, "PREUVE D'ACHAT / FACTURE CLIENT", ln=1, align="C")
             pdf.ln(5)
-            # Image en taille géante (190mm de large)
             pdf.image(tmp_fac_path, x=10, w=190)
             os.unlink(tmp_fac_path)
         except Exception:
@@ -1048,12 +1095,12 @@ elif page == "🛠️ SAV & Réparations":
                             date_reception, nom_client, prenom_client, adresse, tel, mail, 
                             designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
                             motif_defaut, num_facture, date_achat, sous_garantie, photo_1, photo_2, photo_3, photo_facture, 
-                            cree_par, date_creation_brute
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            cree_par, date_creation_brute, quantite
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """, (date_reception_str, client_nom, client_prenom, client_adresse, client_tel, client_email, 
                             materiel_designation, ref_fournisseur, ref_itek, nom_fournisseur, 
                             motif_defaut, sav_num_facture, date_achat_str, sous_garantie, b64_p1, b64_p2, b64_p3, b64_facture, 
-                            st.session_state.user, now_brute))
+                            st.session_state.user, now_brute, quantite))
                         
                     conn.commit()
                     st.success("✅ Le dossier SAV a été enregistré et partagé avec l'équipe !")
@@ -1331,7 +1378,7 @@ elif page == "📦 Demande Fournisseur":
     st.caption("Générez un PDF officiel de demande d'échange ou d'avoir à partir d'un dossier SAV existant.")
     
     # 1. Récupération des dossiers SAV existants
-    cursor.execute("SELECT id, date_reception, nom_client, designation_outil, motif_defaut, nom_fournisseur, photo_1, photo_2, photo_3, photo_facture FROM sav ORDER BY date_creation_brute DESC")
+    cursor.execute("SELECT id, date_reception, nom_client, designation_outil, motif_defaut, nom_fournisseur, photo_1, photo_2, photo_3, photo_facture, sous_garantie, date_achat, quantite FROM sav ORDER BY date_creation_brute DESC")
     dossiers = cursor.fetchall()
     
     if not dossiers:
@@ -1342,7 +1389,7 @@ elif page == "📦 Demande Fournisseur":
         choix = st.selectbox("1. Sélectionnez le dossier SAV défectueux :", list(options_sav.keys()))
         
         dossier_selectionne = options_sav[choix]
-        d_id, d_date, d_client, d_outil, d_motif, d_fournisseur_nom, d_p1, d_p2, d_p3, d_pfac = dossier_selectionne
+        d_id, d_date, d_client, d_outil, d_motif, d_fournisseur_nom, d_p1, d_p2, d_p3, d_pfac, d_garantie, d_date_achat, d_quantite = dossier_selectionne
         
         st.write("---")
         
@@ -1378,7 +1425,7 @@ elif page == "📦 Demande Fournisseur":
             
             st.write("---")
             st.subheader("📋 Nature de la demande")
-            type_demande = st.radio("Sélectionnez l'action souhaitée :", ["Demande d'échange", "Demande d'avoir"])
+            type_demande = st.radio("Sélectionnez l'action souhaitée :", ["Demande SAV", "Demande d'avoir"])
             
         st.write("---")
         
@@ -1391,7 +1438,9 @@ elif page == "📦 Demande Fournisseur":
                 # On ajoute ref_produit en 2e position des paramètres !
                 pdf_bytes = generer_pdf_fournisseur(
                     d_outil, ref_produit, d_motif, f_nom, f_adresse, f_tel, f_mail, 
-                    type_demande, d_p1, d_p2, d_p3, d_pfac, accessoires
+                    type_demande, d_p1, d_p2, d_p3, d_pfac, accessoires,
+                    sous_garantie=d_garantie if d_garantie else "Non",
+                    quantite=d_quantite if d_quantite else 1
                 )
                 
             st.success("✅ Le document est prêt !")
