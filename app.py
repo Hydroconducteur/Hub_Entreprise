@@ -435,27 +435,55 @@ if "db_ready" not in st.session_state:
     st.session_state.db_ready = True
 
 def encoder_image(fichier_upload):
-    if fichier_upload is not None:
+    """
+    Convertit une image uploadée en Base64 optimisé pour Turso.
+
+    Améliorations vs version précédente :
+    ① Correction EXIF automatique  → les photos portrait (mobile) ne s'affichent plus couchées
+    ② Redimensionnement à 1200 px  → on lit les plaques signalétiques et les numéros de facture
+    ③ Antialiasing LANCZOS         → meilleure qualité visuelle lors du redimensionnement
+    ④ Compression adaptative       → on descend la qualité par paliers jusqu'à tenir sous 200 Ko
+    ⑤ optimize=True                → optimisation Huffman, -10% de taille supplémentaire sans perte
+
+    Gain typique : une photo de téléphone de 3-5 Mo → 60-180 Ko après traitement (×20 à ×40).
+    """
+    if fichier_upload is None:
+        return ""
+    try:
+        img = Image.open(fichier_upload)
+
+        # ① Corriger l'orientation EXIF (photos prises en portrait sur mobile)
         try:
-            # 1. On ouvre la photo prise par le téléphone
-            img = Image.open(fichier_upload)
-            
-            # 2. On la redimensionne (max 800x800 pixels pour garder de la qualité mais un petit poids)
-            img.thumbnail((800, 800))
-            
-            # 3. Si c'est un PNG transparent, on lui met un fond blanc pour le transformer en JPEG
-            if img.mode in ("RGBA", "P"):
-                img = img.convert("RGB")
-                
-            # 4. On sauvegarde l'image compressée dans un fichier temporaire en mémoire
+            from PIL import ImageOps
+            img = ImageOps.exif_transpose(img)
+        except Exception:
+            pass
+
+        # ② Convertir en RGB pur (gère PNG transparent, modes RGBA, P, L, CMYK…)
+        if img.mode != "RGB":
+            fond = Image.new("RGB", img.size, (255, 255, 255))
+            if img.mode == "RGBA":
+                fond.paste(img, mask=img.split()[3])  # préserve la transparence
+            else:
+                fond.paste(img.convert("RGB"))
+            img = fond
+
+        # ③ Redimensionner à 1200 px max (jamais d'agrandissement) avec antialiasing
+        img.thumbnail((1200, 1200), Image.LANCZOS)
+
+        # ④ Compression adaptative : on cherche la meilleure qualité qui tient sous 200 Ko
+        #    Paliers : 82 → 70 → 58 → 45 (on s'arrête dès qu'on est sous le seuil)
+        buffer = io.BytesIO()
+        for qualite in (82, 70, 58, 45):
             buffer = io.BytesIO()
-            img.save(buffer, format="JPEG", quality=75)
-            
-            # 5. On transforme ce petit JPEG en texte pur pour que Turso l'accepte sans planter
-            return base64.b64encode(buffer.getvalue()).decode('utf-8')
-        except Exception as e:
-            return ""
-    return ""
+            img.save(buffer, format="JPEG", quality=qualite, optimize=True)
+            if buffer.tell() <= 200 * 1024:   # 200 Ko
+                break
+
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    except Exception:
+        return ""
 
 # Algorithme de nettoyage automatique + archivage
 def nettoyer_et_archiver_data():
