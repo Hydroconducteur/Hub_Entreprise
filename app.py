@@ -676,6 +676,7 @@ if "user" not in st.session_state: st.session_state.user = None
 if "role" not in st.session_state: st.session_state.role = None
 if "navigation_page" not in st.session_state: st.session_state.navigation_page = "📋 Planning de l'équipe"
 if "modal_mission" not in st.session_state: st.session_state.modal_mission = None
+if "sav_edit_id" not in st.session_state: st.session_state.sav_edit_id = None
 
 # Connexion automatique via URL
 parametres_url = st.query_params
@@ -1118,7 +1119,8 @@ elif page == "🛠️ SAV & Réparations":
                 id, date_reception, nom_client, prenom_client, adresse, tel, mail, 
                 designation_outil, ref_fournisseur, ref_itek, nom_fournisseur, 
                 motif_defaut, num_facture, date_achat, sous_garantie, 
-                photo_1, photo_2, photo_3, photo_facture, statut, cree_par, date_creation_brute 
+                photo_1, photo_2, photo_3, photo_facture, statut, cree_par, date_creation_brute,
+                COALESCE(quantite, 1) AS quantite
             FROM sav 
             ORDER BY date_creation_brute DESC
         """)
@@ -1126,44 +1128,188 @@ elif page == "🛠️ SAV & Réparations":
 
         if dossiers_sav:
             for d in dossiers_sav:
-                # Le déballage correspond maintenant à 100% à la requête ci-dessus
-                d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_date_achat, d_garantie, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b = d
-                
-                with st.expander(f"🛠️ Dossier #{d_id} — {d_outil} | {d_nom} {d_prenom} | {'✅ Terminé' if d_statut == 'Terminé' else '⏳ En cours'}"):
-                    col_statut_row = st.columns([3, 1])
-                    with col_statut_row[1]:
-                        nouveau_statut = st.selectbox("Statut du dossier", ["En cours", "Terminé"], index=0 if d_statut == "En cours" else 1, key=f"statut_{d_id}")
-                        if nouveau_statut != d_statut:
-                            cursor.execute("UPDATE sav SET statut = ? WHERE id = ?", (nouveau_statut, d_id))
-                            conn.commit()
+                d_id, d_date, d_nom, d_prenom, d_adresse, d_tel, d_mail, d_outil, d_ref_f, d_ref_i, d_nom_f, d_motif, d_num_fac, d_date_achat, d_garantie, d_p1, d_p2, d_p3, d_pfac, d_statut, d_cree_par, d_date_b, d_quantite = d
+
+                is_editing = st.session_state.sav_edit_id == d_id
+
+                with st.expander(
+                    f"🛠️ Dossier #{d_id} — {d_outil} | {d_nom} {d_prenom} | {'✅ Terminé' if d_statut == 'Terminé' else '⏳ En cours'}",
+                    expanded=is_editing
+                ):
+                    # ============================================================
+                    # MODE ÉDITION
+                    # ============================================================
+                    if is_editing:
+                        st.subheader(f"✏️ Modification du Dossier #{d_id}")
+                        st.caption("Modifiez les champs souhaités. Pour les photos, laissez vide pour conserver l'existante.")
+
+                        # Helper pour parser les dates stockées en texte
+                        def parse_date(s):
+                            for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
+                                try: return datetime.strptime(s, fmt).date()
+                                except: pass
+                            return datetime.now(ZoneInfo("Europe/Paris")).date()
+
+                        with st.form(f"form_edit_sav_{d_id}", border=True):
+                            st.markdown("**👤 Informations Client**")
+                            col_r, col_dr = st.columns(2)
+                            e_date_recep  = col_r.date_input("📅 Date réception", value=parse_date(d_date), key=f"e_dr_{d_id}")
+                            col_en, col_ep = st.columns(2)
+                            e_nom    = col_en.text_input("👤 Nom",    value=d_nom,    key=f"e_nom_{d_id}")
+                            e_prenom = col_ep.text_input("👤 Prénom", value=d_prenom, key=f"e_pre_{d_id}")
+
+                            col_ea, col_ecp, col_ev = st.columns([3, 1, 2])
+                            # L'adresse stockée contient parfois CP+Ville collés — on l'affiche telle quelle
+                            e_adresse = col_ea.text_input("🏠 Adresse", value=d_adresse or "", key=f"e_adr_{d_id}")
+                            e_cp      = col_ecp.text_input("📮 CP",     value="",              key=f"e_cp_{d_id}")
+                            e_ville   = col_ev.text_input("🏙️ Ville",  value="",              key=f"e_vil_{d_id}")
+
+                            col_et, col_em = st.columns(2)
+                            e_tel  = col_et.text_input("📞 Téléphone", value=d_tel  or "", key=f"e_tel_{d_id}")
+                            e_mail = col_em.text_input("📧 Email",     value=d_mail or "", key=f"e_mail_{d_id}")
+
+                            st.markdown("---")
+                            st.markdown("**🔧 Matériel & Défauts**")
+                            col_eg, col_ed = st.columns(2)
+                            with col_eg:
+                                e_outil = st.text_input("📦 Désignation",         value=d_outil  or "", key=f"e_out_{d_id}")
+                                col_ei, col_eq = st.columns([3, 1])
+                                e_ref_i = col_ei.text_input("🏷️ Réf ITEK",       value=d_ref_i  or "", key=f"e_ri_{d_id}")
+                                e_qte   = col_eq.number_input("🔢 Quantité",      value=int(d_quantite) if d_quantite else 1, min_value=1, step=1, key=f"e_qte_{d_id}")
+                                col_erf, col_enf = st.columns(2)
+                                e_ref_f = col_erf.text_input("🏷️ Réf Fournisseur", value=d_ref_f or "", key=f"e_rf_{d_id}")
+                                e_nom_f = col_enf.text_input("🏭 Fournisseur",    value=d_nom_f  or "", key=f"e_nf_{d_id}")
+                            with col_ed:
+                                e_motif = st.text_area("📋 Motif / Défaut", value=d_motif or "", height=130, key=f"e_mot_{d_id}")
+
+                            st.markdown("---")
+                            st.markdown("**🧾 Facturation & Garantie**")
+                            col_ef1, col_ef2 = st.columns(2)
+                            e_num_fac    = col_ef1.text_input("Numéro Facture", value=d_num_fac  or "", key=f"e_nfac_{d_id}")
+                            e_date_achat = col_ef1.date_input("📅 Date d'achat", value=parse_date(d_date_achat) if d_date_achat else datetime.now(ZoneInfo("Europe/Paris")).date(), key=f"e_da_{d_id}")
+                            e_garantie   = col_ef2.radio("🛡️ Sous garantie ?", ["Oui", "Non"], index=0 if d_garantie == "Oui" else 1, horizontal=True, key=f"e_gar_{d_id}")
+
+                            st.markdown("---")
+                            st.markdown("**📷 Photos — laissez vide pour conserver l'image actuelle**")
+                            col_ep1, col_ep2, col_ep3, col_epf = st.columns(4)
+
+                            with col_ep1:
+                                if d_p1: st.image(base64.b64decode(d_p1), caption="Actuelle", use_container_width=True)
+                                new_p1 = st.file_uploader("Remplacer Plaque Sig.", type=["jpg","jpeg","png"], key=f"np1_{d_id}")
+                            with col_ep2:
+                                if d_p2: st.image(base64.b64decode(d_p2), caption="Actuelle", use_container_width=True)
+                                new_p2 = st.file_uploader("Remplacer Défaut 1", type=["jpg","jpeg","png"], key=f"np2_{d_id}")
+                            with col_ep3:
+                                if d_p3: st.image(base64.b64decode(d_p3), caption="Actuelle", use_container_width=True)
+                                new_p3 = st.file_uploader("Remplacer Défaut 2", type=["jpg","jpeg","png"], key=f"np3_{d_id}")
+                            with col_epf:
+                                if d_pfac: st.image(base64.b64decode(d_pfac), caption="Actuelle", use_container_width=True)
+                                new_pfac = st.file_uploader("Remplacer Facture", type=["jpg","jpeg","png"], key=f"npfac_{d_id}")
+
+                            st.write("")
+                            col_save, col_cancel = st.columns(2)
+                            save_btn   = col_save.form_submit_button("💾 Enregistrer les modifications", use_container_width=True, type="primary")
+                            cancel_btn = col_cancel.form_submit_button("❌ Annuler sans sauvegarder",     use_container_width=True)
+
+                        # Traitement du formulaire hors du bloc with (Streamlit l'évalue après)
+                        if cancel_btn:
+                            st.session_state.sav_edit_id = None
                             st.rerun()
-                    c1, c2 = col_statut_row[0].columns(2)
-                    c1.markdown(f"**Reçu le :** {d_date} par {d_cree_par}")
-                    c1.markdown(f"**Contact :** {d_tel} / {d_mail}")
-                    c1.markdown(f"**Adresse :** {d_adresse}")
-                    
-                    c2.markdown(f"**Fournisseur :** {d_nom_f} (Réf: {d_ref_f})")
-                    c2.markdown(f"**Réf ITEK :** {d_ref_i}")
-                    c2.markdown(f"**Numéro Facture :** {d_num_fac}")
-                    c2.markdown(f"**Date d'achat :** {d_date_achat} | **Garantie :** {d_garantie}")
-                    
-                    st.info(f"**Motif du retour :**\n{d_motif}")
 
-                    # Affichage des photos si elles existent
-                    st.write("**Photos rattachées au dossier :**")
-                    col_p1, col_p2, col_p3, col_pfac = st.columns(4)
-                    
-                    if d_p1: col_p1.image(base64.b64decode(d_p1), caption="Plaque signalétique", use_container_width=True)
-                    if d_p2: col_p2.image(base64.b64decode(d_p2), caption="Défaut 1", use_container_width=True)
-                    if d_p3: col_p3.image(base64.b64decode(d_p3), caption="Défaut 2", use_container_width=True)
-                    if d_pfac: col_pfac.image(base64.b64decode(d_pfac), caption="Facture", use_container_width=True)
+                        if save_btn:
+                            if e_nom and e_tel and e_outil and e_motif:
+                                # Photos : nouvelle si uploadée, sinon on garde l'ancienne
+                                b64_p1_upd   = encoder_image(new_p1)   if new_p1   else d_p1
+                                b64_p2_upd   = encoder_image(new_p2)   if new_p2   else d_p2
+                                b64_p3_upd   = encoder_image(new_p3)   if new_p3   else d_p3
+                                b64_pfac_upd = encoder_image(new_pfac) if new_pfac else d_pfac
 
-                    if st.session_state.role == "Administrateur":
+                                adresse_complete = f"{e_adresse} {e_cp} {e_ville}".strip()
+
+                                cursor.execute("""
+                                    UPDATE sav SET
+                                        date_reception   = ?,
+                                        nom_client       = ?,
+                                        prenom_client    = ?,
+                                        adresse          = ?,
+                                        tel              = ?,
+                                        mail             = ?,
+                                        designation_outil= ?,
+                                        ref_fournisseur  = ?,
+                                        ref_itek         = ?,
+                                        nom_fournisseur  = ?,
+                                        motif_defaut     = ?,
+                                        num_facture      = ?,
+                                        date_achat       = ?,
+                                        sous_garantie    = ?,
+                                        quantite         = ?,
+                                        photo_1          = ?,
+                                        photo_2          = ?,
+                                        photo_3          = ?,
+                                        photo_facture    = ?
+                                    WHERE id = ?
+                                """, (
+                                    e_date_recep.strftime("%d/%m/%Y"),
+                                    e_nom, e_prenom, adresse_complete, e_tel, e_mail,
+                                    e_outil, e_ref_f, e_ref_i, e_nom_f,
+                                    e_motif, e_num_fac,
+                                    e_date_achat.strftime("%d/%m/%Y"),
+                                    e_garantie, int(e_qte),
+                                    b64_p1_upd, b64_p2_upd, b64_p3_upd, b64_pfac_upd,
+                                    d_id
+                                ))
+                                conn.commit()
+                                st.session_state.sav_edit_id = None
+                                st.success(f"✅ Dossier #{d_id} mis à jour avec succès !")
+                                st.rerun()
+                            else:
+                                st.error("❌ Nom, Téléphone, Désignation et Motif sont obligatoires.")
+
+                    # ============================================================
+                    # MODE LECTURE (vue normale)
+                    # ============================================================
+                    else:
+                        col_statut_row = st.columns([3, 1])
+                        with col_statut_row[1]:
+                            nouveau_statut = st.selectbox("Statut du dossier", ["En cours", "Terminé"], index=0 if d_statut == "En cours" else 1, key=f"statut_{d_id}")
+                            if nouveau_statut != d_statut:
+                                cursor.execute("UPDATE sav SET statut = ? WHERE id = ?", (nouveau_statut, d_id))
+                                conn.commit()
+                                st.rerun()
+                        c1, c2 = col_statut_row[0].columns(2)
+                        c1.markdown(f"**Reçu le :** {d_date} par {d_cree_par}")
+                        c1.markdown(f"**Contact :** {d_tel} / {d_mail}")
+                        c1.markdown(f"**Adresse :** {d_adresse}")
+
+                        c2.markdown(f"**Fournisseur :** {d_nom_f} (Réf: {d_ref_f})")
+                        c2.markdown(f"**Réf ITEK :** {d_ref_i}")
+                        c2.markdown(f"**Numéro Facture :** {d_num_fac}")
+                        c2.markdown(f"**Date d'achat :** {d_date_achat} | **Garantie :** {d_garantie}")
+
+                        st.info(f"**Motif du retour :**\n{d_motif}")
+
+                        st.write("**Photos rattachées au dossier :**")
+                        col_p1, col_p2, col_p3, col_pfac = st.columns(4)
+                        if d_p1:   col_p1.image(base64.b64decode(d_p1),   caption="Plaque signalétique", use_container_width=True)
+                        if d_p2:   col_p2.image(base64.b64decode(d_p2),   caption="Défaut 1",            use_container_width=True)
+                        if d_p3:   col_p3.image(base64.b64decode(d_p3),   caption="Défaut 2",            use_container_width=True)
+                        if d_pfac: col_pfac.image(base64.b64decode(d_pfac), caption="Facture",           use_container_width=True)
+
                         st.write("---")
-                        if st.button("🗑️ Supprimer définitivement ce dossier", key=f"del_sav_{d_id}"):
-                            cursor.execute("DELETE FROM sav WHERE id = ?", (d_id,))
-                            conn.commit()
-                            st.rerun()
+                        # Boutons Modifier (tout le monde) + Supprimer (admin)
+                        if st.session_state.role == "Administrateur":
+                            col_edit, col_del = st.columns(2)
+                            if col_edit.button("✏️ Modifier ce dossier", key=f"edit_sav_{d_id}", use_container_width=True):
+                                st.session_state.sav_edit_id = d_id
+                                st.rerun()
+                            if col_del.button("🗑️ Supprimer définitivement", key=f"del_sav_{d_id}", use_container_width=True):
+                                cursor.execute("DELETE FROM sav WHERE id = ?", (d_id,))
+                                conn.commit()
+                                st.rerun()
+                        else:
+                            if st.button("✏️ Modifier ce dossier", key=f"edit_sav_{d_id}", use_container_width=True):
+                                st.session_state.sav_edit_id = d_id
+                                st.rerun()
         else:
             st.info("Aucun dossier SAV en cours pour le moment.")
 # Page 3 Tchat de groupe et Tchat privé
