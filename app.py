@@ -532,7 +532,7 @@ from fpdf import FPDF
 import tempfile
 import os
 
-def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac, accessoires="", sous_garantie="Non", quantite=1):
+def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, f_mail, type_demande, p1, p2, p3, p_fac, accessoires="", sous_garantie="Non", quantite=1, commentaire=""):
     # Import PIL pour calculer les dimensions réelles des images
     try:
         from PIL import Image as PILImage
@@ -627,6 +627,17 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         pdf.cell(0, 6, f"- Accessoires fournis : {accessoires}", ln=1)
         
     pdf.multi_cell(0, 6, f"- Motif du defaut : {motif}")
+
+    # Commentaire libre — affiché dans un encadré si renseigné
+    if commentaire and commentaire.strip():
+        pdf.ln(3)
+        pdf.set_font("helvetica", "B", 11)
+        pdf.cell(0, 7, "Commentaire :", ln=1)
+        pdf.set_font("helvetica", "I", 10)
+        pdf.set_fill_color(248, 248, 248)
+        pdf.multi_cell(0, 6, commentaire.strip(), border=1, fill=True)
+        pdf.set_font("helvetica", "", 11)
+
     pdf.ln(4)
             
     # --- PHOTOS DES DÉFAUTS EN DISPOSITION VERTICALE — TOUTES SUR LA PAGE 1 ---
@@ -1588,6 +1599,7 @@ elif page == "📦 Demande Fournisseur":
             # La référence devient normale et on ajoute les accessoires juste en dessous
             ref_produit = st.text_input("🏷️ Référence du produit", placeholder="Ex : REF-45892A")
             accessoires = st.text_input("🎒 Accessoires fournis (Facultatif)", placeholder="Ex : Batterie, Chargeur...")
+            commentaire = st.text_area("💬 Commentaire (Facultatif)", placeholder="Ex : Deuxième retour du même client, pièce reçue endommagée, délai souhaité sous 15 jours...", height=100)
             
         with col_droite:
             st.subheader("🏭 Destinataire (Fournisseur)")
@@ -1614,7 +1626,8 @@ elif page == "📦 Demande Fournisseur":
                     d_outil, ref_produit, d_motif, f_nom, f_adresse, f_tel, f_mail, 
                     type_demande, d_p1, d_p2, d_p3, d_pfac, accessoires,
                     sous_garantie=d_garantie if d_garantie else "Non",
-                    quantite=d_quantite if d_quantite else 1
+                    quantite=d_quantite if d_quantite else 1,
+                    commentaire=commentaire
                 )
                 
             st.success("✅ Le document est prêt !")
