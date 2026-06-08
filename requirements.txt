@@ -2,3 +2,4 @@ streamlit
 requests
 streamlit-autorefresh
 fpdf2
+pymupdf
