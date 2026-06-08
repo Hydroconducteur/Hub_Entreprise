@@ -13,7 +13,7 @@ st.set_page_config(page_title="Hub Entreprise Pro", page_icon="📱", layout="wi
 
 VOTRE_LIEN_ACTUEL = st.secrets["APP_URL"]
 
-# CSS PC/Téléphone (Inchangé)
+# CSS PC/Téléphone
 st.markdown("""
 <style>
 /* Reset et utilitaires */
@@ -27,7 +27,7 @@ div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] {
     width: 100% !important;
 }
 
-/* 1. Le Bouton d'Action Principal (Fait / Annuler) */
+/* 1. Bouton d'Action Principal (Fait / Annuler) */
 div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Fait")),
 div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("Annuler")) {
     background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
@@ -47,7 +47,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     transform: translateY(-1px) !important;
 }
 
-/* 2. Le Bouton Supprimer (Poubelle) */
+/* 2. Le Bouton Supprimer  */
 div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] button:has(div:contains("🗑️")) {
     background: transparent !important;
     color: #94a3b8 !important;
@@ -63,7 +63,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
     border-color: rgba(239, 68, 68, 0.4) !important;
 }
 
-/* --- 💻 GRILLE DE DONNÉES DESKTOP (PC) --- */
+/* 💻 GRILLE DE DONNÉES  PC */
 @media (min-width: 769px) {
     /* --- CORRECTIONS ALIGNEMENT VERTICAL PARFAIT --- */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] {
@@ -107,7 +107,7 @@ div[data-testid="stHorizontalBlock"]:has(.row-marker) div[data-testid="column"] 
         line-height: 1.2 !important;
     }
 
-    /* Lignes du tableau (Cartes horizontales épurées) */
+    /* Lignes du tableau (Cartes horizontales) */
     div[data-testid="stHorizontalBlock"]:has(.row-marker) {
         background: #1e293b !important;
         border: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -314,8 +314,6 @@ class TursoAdapter:
             elif isinstance(p, float): args.append({"type": "float", "value": str(p)})
             elif p is None: args.append({"type": "null"})
             else: 
-                # C'EST CETTE LIGNE QUI TUE LE BUG MEMORYVIEW :
-                # Tout le reste est transformé de force en texte pur str()
                 args.append({"type": "text", "value": str(p)})
                 
         payload = {
@@ -438,13 +436,12 @@ if "db_ready" not in st.session_state:
 def encoder_image(fichier_upload):
     if fichier_upload is not None:
         try:
-            # --- NOUVEAUTÉ : Gestion des fichiers PDF ---
             if fichier_upload.name.lower().endswith('.pdf'):
                 import fitz  # Fait appel à PyMuPDF pour lire le PDF
                 fichier_upload.seek(0)
                 doc = fitz.open(stream=fichier_upload.read(), filetype="pdf")
-                page = doc.load_page(0)  # On extrait la 1ère page du document
-                pix = page.get_pixmap(dpi=150)  # On la convertit en image de belle qualité
+                page = doc.load_page(0) 
+                pix = page.get_pixmap(dpi=150) 
                 img_data = pix.tobytes("png")
                 img = Image.open(io.BytesIO(img_data))
             else:
@@ -537,7 +534,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     pdf = FPDF()
     pdf.add_page()
     
-    # --- EN-TÊTE : Quincaillerie MAUPU (Gauche) et Fournisseur (Droite) ---
+    # EN-TÊTE : Quincaillerie MAUPU et Fournisseur
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(100, 6, "Quincaillerie MAUPU", ln=0)
     pdf.cell(90, 6, f"Fournisseur : {f_nom}", ln=1)
@@ -566,13 +563,13 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     # Repositionnement en dessous
     pdf.set_y(max(y_gauche_fin, y_droite_fin) + 8)
     
-    # --- TITRE DE LA DEMANDE ---
+    # Titre de la demande
     pdf.set_font("helvetica", "B", 16)
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(0, 11, f"OBJET : {type_demande.upper()}", border=1, ln=1, align="C", fill=True)
     pdf.ln(6)
     
-    # --- INFORMATIONS MATÉRIEL ---
+    # Information Matériel
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 8, "Details du materiel defectueux :", ln=1)
     
@@ -593,7 +590,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
     # Sous garantie affiché uniquement si Oui
     if sous_garantie and str(sous_garantie).strip() == "Oui":
         pdf.set_font("helvetica", "B", 11)
-        pdf.set_text_color(0, 120, 0)  # Vert pour la mettre en valeur
+        pdf.set_text_color(0, 120, 0) 
         pdf.cell(0, 6, "- Sous garantie : OUI", ln=1)
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("helvetica", "", 11)
@@ -616,7 +613,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
 
     pdf.ln(4)
             
-    # --- PHOTOS DES DÉFAUTS EN DISPOSITION VERTICALE — TOUTES SUR LA PAGE 1 ---
+    # Photos des défauts en disposition verticale uniquement sur page 1
     defauts = [p1, p2, p3]
     valid_defauts = []
     
@@ -636,7 +633,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         pdf.ln(2)
 
         nb_imgs = len(valid_defauts)
-        gap_mm = 5  # espace entre les photos
+        gap_mm = 5  
         marge_bas = 15  # marge de sécurité en bas de page
 
         # Espace vertical disponible jusqu'au bas de la page
@@ -657,7 +654,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
             try: os.unlink(tmp_path)
             except: pass
 
-# --- FACTURE CLIENT EN PLEINE PAGE DÉDIÉE (INTELLIGENTE ET CENTRÉE) ---
+# Facture client sur toute la seconde page (centrée)
     if p_fac:
         try:
             img_data = base64.b64decode(p_fac.split("base64,")[-1])
@@ -670,7 +667,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
             pdf.cell(0, 10, "PREUVE D'ACHAT / FACTURE CLIENT", ln=1, align="C")
             pdf.ln(5)
             
-            # Calcule la taille parfaite pour que la facture tienne ENTIÈREMENT sur la page
+            # Calcule la taille parfaite pour que la facture tienne entièrement sur la page
             w_fac, h_fac = dims_image_pdf(tmp_fac_path, max_w_mm=190, max_h_mm=240)
             x_center = (210 - w_fac) / 2  # Centre horizontalement la facture sur les 21cm de la page
             
@@ -680,7 +677,7 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
         except Exception:
             pass
 
-    # --- GÉNÉRATION DU PDF ---
+    # Génération du PDF
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_pdf:
         pdf_path = tmp_pdf.name
         
@@ -996,20 +993,18 @@ if page == "📋 Planning de l'équipe":
             st.info("Aucune tâche ne correspond à ce filtre.")
 
     afficher_tableau_taches(filtre_statut)
-# -------------------------------------------------------------
-# PAGE NOUVELLE : SAV ET REPARATIONS
-# -------------------------------------------------------------
+# Page SAV & Réparation
 elif page == "🛠️ SAV & Réparations":
     st.title("🛠️ Espace SAV & Réparations")
     
     onglet_nouveau, onglet_suivi = st.tabs(["📝 Créer un dossier SAV", "📂 Suivi des dossiers existants"])
 
-    # SOUS-ONGLET 1 : LE GRAND FORMULAIRE
+    # Formulaire
     with onglet_nouveau:
         st.markdown("Veuillez remplir les informations du client. **(Sur mobile, les boutons 'Parcourir' ouvriront l'appareil photo)**.")
         
         with st.form("form_nouveau_sav", clear_on_submit=True):
-            # 1. INFO CLIENT
+            # 1. Info Client
             st.subheader("👤 Informations Client")
 
             # Date de réception
@@ -1040,7 +1035,7 @@ elif page == "🛠️ SAV & Réparations":
 
             st.write("---")
             
-            # 2. INFO MATÉRIEL & DÉFAUTS
+            # 2. Info matériel & défaut
             st.subheader("🔧 Informations Matériel et Défauts")
 
             col_mat_gauche, col_mat_droite = st.columns(2)
@@ -1075,7 +1070,7 @@ elif page == "🛠️ SAV & Réparations":
 
             st.write("---")
             
-            # 3. FACTURATION & GARANTIE (Séparé du matériel)
+            # 3. Facturation & garantie (Séparé du matériel)
             st.subheader("🧾 Facturation & Garantie")
             
             col_fac1, col_fac2 = st.columns(2)
@@ -1088,7 +1083,7 @@ elif page == "🛠️ SAV & Réparations":
 
             st.write("---")
             
-            # 4. PHOTOS DE L'OUTIL
+            # 4. Photos de l'outils
             st.subheader("📷 Photos de l'outil")
             col7, col8, col9 = st.columns(3)
             sav_p1 = col7.file_uploader("Photo Plaque Signalitique", type=["jpg", "jpeg", "png", "pdf"])
@@ -1130,7 +1125,7 @@ elif page == "🛠️ SAV & Réparations":
                 else:
                     st.error("❌ Merci de remplir au minimum les champs obligatoires : Nom, Tel, Désignation et Motif.")
 
-   # SOUS-ONGLET 2 : LE SUIVI
+   # Sous-onglet : le suivi
     with onglet_suivi:
         st.subheader("Dossiers clients enregistrés")
         
@@ -1157,9 +1152,7 @@ elif page == "🛠️ SAV & Réparations":
                     f"🛠️ Dossier #{d_id} — {d_outil} | {d_nom} {d_prenom} | {'✅ Terminé' if d_statut == 'Terminé' else '⏳ En cours'}",
                     expanded=is_editing
                 ):
-                    # ============================================================
-                    # MODE ÉDITION
-                    # ============================================================
+                    # Édition du dossier si erreur ...
                     if is_editing:
                         st.subheader(f"✏️ Modification du Dossier #{d_id}")
                         st.caption("Modifiez les champs souhaités. Pour les photos, laissez vide pour conserver l'existante.")
@@ -1286,9 +1279,7 @@ elif page == "🛠️ SAV & Réparations":
                             else:
                                 st.error("❌ Nom, Téléphone, Désignation et Motif sont obligatoires.")
 
-                    # ============================================================
-                    # MODE LECTURE (vue normale)
-                    # ============================================================
+                    # Mode lecture (vue normale)
                     else:
                         col_statut_row = st.columns([3, 1])
                         with col_statut_row[1]:
@@ -1565,7 +1556,7 @@ elif page == "📦 Demande Fournisseur":
         
         with col_gauche:
             st.subheader("🏢 Expéditeur")
-            # Attention : il y a deux espaces à la fin de chaque ligne ci-dessous !
+            # Il y a deux espaces à la fin de chaque ligne ci-dessous
             st.markdown("""
             **Quincaillerie MAUPU**  
             3 rue du Mail Est  
@@ -1603,7 +1594,6 @@ elif page == "📦 Demande Fournisseur":
         
         if st.button("⚙️ Préparer le document PDF", use_container_width=True):
             with st.spinner("Génération du PDF en cours, traitement des images..."):
-                # On ajoute ref_produit en 2e position des paramètres !
                 pdf_bytes = generer_pdf_fournisseur(
                     d_outil, ref_produit, d_motif, f_nom, f_adresse, f_tel, f_mail, 
                     type_demande, d_p1, d_p2, d_p3, d_pfac, accessoires,
