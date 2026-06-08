@@ -434,56 +434,32 @@ if "db_ready" not in st.session_state:
     initialiser_structure_base()
     st.session_state.db_ready = True
 
+# Compresseur automatique de photos pour éviter de faire planter l'application
 def encoder_image(fichier_upload):
-    """
-    Convertit une image uploadée en Base64 optimisé pour Turso.
-
-    Améliorations vs version précédente :
-    ① Correction EXIF automatique  → les photos portrait (mobile) ne s'affichent plus couchées
-    ② Redimensionnement à 1200 px  → on lit les plaques signalétiques et les numéros de facture
-    ③ Antialiasing LANCZOS         → meilleure qualité visuelle lors du redimensionnement
-    ④ Compression adaptative       → on descend la qualité par paliers jusqu'à tenir sous 200 Ko
-    ⑤ optimize=True                → optimisation Huffman, -10% de taille supplémentaire sans perte
-
-    Gain typique : une photo de téléphone de 3-5 Mo → 60-180 Ko après traitement (×20 à ×40).
-    """
-    if fichier_upload is None:
-        return ""
-    try:
-        img = Image.open(fichier_upload)
-
-        # ① Corriger l'orientation EXIF (photos prises en portrait sur mobile)
+    if fichier_upload is not None:
         try:
-            from PIL import ImageOps
-            img = ImageOps.exif_transpose(img)
-        except Exception:
-            pass
-
-        # ② Convertir en RGB pur (gère PNG transparent, modes RGBA, P, L, CMYK…)
-        if img.mode != "RGB":
-            fond = Image.new("RGB", img.size, (255, 255, 255))
-            if img.mode == "RGBA":
-                fond.paste(img, mask=img.split()[3])  # préserve la transparence
+            # --- NOUVEAUTÉ : Gestion des fichiers PDF ---
+            if fichier_upload.name.lower().endswith('.pdf'):
+                import fitz  # Fait appel à PyMuPDF pour lire le PDF
+                fichier_upload.seek(0)
+                doc = fitz.open(stream=fichier_upload.read(), filetype="pdf")
+                page = doc.load_page(0)  # On extrait la 1ère page du document
+                pix = page.get_pixmap(dpi=150)  # On la convertit en image de belle qualité
+                img_data = pix.tobytes("png")
+                img = Image.open(io.BytesIO(img_data))
             else:
-                fond.paste(img.convert("RGB"))
-            img = fond
+                # Traitement normal pour les vraies images (jpg, png)
+                img = Image.open(fichier_upload)
 
-        # ③ Redimensionner à 1200 px max (jamais d'agrandissement) avec antialiasing
-        img.thumbnail((1200, 1200), Image.LANCZOS)
-
-        # ④ Compression adaptative : on cherche la meilleure qualité qui tient sous 200 Ko
-        #    Paliers : 82 → 70 → 58 → 45 (on s'arrête dès qu'on est sous le seuil)
-        buffer = io.BytesIO()
-        for qualite in (82, 70, 58, 45):
+            # Compression pour l'enregistrement en Base de Données
+            img.thumbnail((800, 800))
+            if img.mode in ("RGBA", "P"): img = img.convert("RGB")
             buffer = io.BytesIO()
-            img.save(buffer, format="JPEG", quality=qualite, optimize=True)
-            if buffer.tell() <= 200 * 1024:   # 200 Ko
-                break
-
-        return base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-    except Exception:
-        return ""
+            img.save(buffer, format="JPEG", quality=75)
+            return base64.b64encode(buffer.getvalue()).decode('utf-8')
+        except Exception as e:
+            return ""
+    return ""
 
 # Algorithme de nettoyage automatique + archivage
 def nettoyer_et_archiver_data():
@@ -1108,16 +1084,16 @@ elif page == "🛠️ SAV & Réparations":
                 date_achat = st.date_input("📅 Date d'achat", datetime.now(ZoneInfo("Europe/Paris")))
             with col_fac2:
                 sous_garantie = st.radio("🛡️ L'objet est-il sous garantie ?", ["Oui", "Non"], horizontal=True)
-                sav_photo_facture = st.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png"])
+                sav_photo_facture = st.file_uploader("Prendre en photo / Ajouter la facture client", type=["jpg", "jpeg", "png", "pdf"])
 
             st.write("---")
             
             # 4. PHOTOS DE L'OUTIL
             st.subheader("📷 Photos de l'outil")
             col7, col8, col9 = st.columns(3)
-            sav_p1 = col7.file_uploader("Photo Plaque Signalétique", type=["jpg", "jpeg", "png"])
-            sav_p2 = col8.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png"])
-            sav_p3 = col9.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png"])
+            sav_p1 = col7.file_uploader("Photo Plaque Signalitique", type=["jpg", "jpeg", "png", "pdf"])
+            sav_p2 = col8.file_uploader("Photo Défaut 1", type=["jpg", "jpeg", "png", "pdf"])
+            sav_p3 = col9.file_uploader("Photo Défaut 2", type=["jpg", "jpeg", "png", "pdf"])
 
             submit_sav = st.form_submit_button("📁 Enregistrer le dossier SAV", use_container_width=True)
 
