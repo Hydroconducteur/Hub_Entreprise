@@ -681,19 +681,25 @@ def generer_pdf_fournisseur(outil, ref_produit, motif, f_nom, f_adresse, f_tel, 
             try: os.unlink(tmp_path)
             except: pass
 
-    # --- FACTURE CLIENT EN PLEINE PAGE DÉDIÉE ---
+# --- FACTURE CLIENT EN PLEINE PAGE DÉDIÉE (INTELLIGENTE ET CENTRÉE) ---
     if p_fac:
         try:
             img_data = base64.b64decode(p_fac.split("base64,")[-1])
             with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                 tmp.write(img_data)
                 tmp_fac_path = tmp.name
-            
+
             pdf.add_page()
             pdf.set_font("helvetica", "B", 14)
             pdf.cell(0, 10, "PREUVE D'ACHAT / FACTURE CLIENT", ln=1, align="C")
             pdf.ln(5)
-            pdf.image(tmp_fac_path, x=10, w=190)
+            
+            # Calcule la taille parfaite pour que la facture tienne ENTIÈREMENT sur la page
+            w_fac, h_fac = dims_image_pdf(tmp_fac_path, max_w_mm=190, max_h_mm=240)
+            x_center = (210 - w_fac) / 2  # Centre horizontalement la facture sur les 21cm de la page
+            
+            # Affiche l'image avec ses proportions gardées et sans débordement
+            pdf.image(tmp_fac_path, x=x_center, y=pdf.get_y(), w=w_fac, h=h_fac)
             os.unlink(tmp_fac_path)
         except Exception:
             pass
